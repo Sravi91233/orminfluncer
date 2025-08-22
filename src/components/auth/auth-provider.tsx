@@ -35,9 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const appUser = userSnap.data() as AppUser;
           setUser(appUser);
         } else {
-          // This case might happen if a user is created in Auth but not in Firestore
-          // Or for Google sign-in on the first time.
-           const newUser: AppUser = {
+          const newUser: AppUser = {
             id: firebaseUser.uid,
             email: firebaseUser.email!,
             name: firebaseUser.displayName,
