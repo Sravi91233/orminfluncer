@@ -34,7 +34,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const menuItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, admin: false },
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, admin: true },
-    { href: '/', label: 'Search', icon: Search, admin: false },
+    { href: '/search', label: 'Search', icon: Search, admin: false },
     { href: '/admin/users', label: 'Users', icon: Users, admin: true },
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart3, admin: true },
   ].filter(item => user?.role === 'admin' ? item.admin : !item.admin);
@@ -65,12 +65,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href} passHref legacyBehavior>
-                  <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </Link>
+                <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.label}>
+                    <Link href={item.href}>
+                      <item.icon />
+                      <span>{item.label}</span>
+                    </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
