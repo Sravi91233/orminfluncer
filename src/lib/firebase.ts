@@ -4,12 +4,13 @@ import { getFirestore } from 'firebase/firestore';
 
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "AIzaSyBYsbHTJsAir4Wd6pGIIc2cPit6s0jYsxk",
+  authDomain: "influncer-2968e.firebaseapp.com",
+  projectId: "influncer-2968e",
+  storageBucket: "influncer-2968e.appspot.com",
+  messagingSenderId: "392907356868",
+  appId: "1:392907356868:web:1f322945bb3fb271f42791",
+  measurementId: "G-YVVJL2X0HL"
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
