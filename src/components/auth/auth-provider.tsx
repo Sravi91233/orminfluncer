@@ -5,7 +5,7 @@ import { onAuthStateChanged, User, signOut, createUserWithEmailAndPassword, sign
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { LoginCredentials, SignupCredentials, AppUser } from '@/types';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
   user: AppUser | null;
@@ -18,13 +18,10 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const publicRoutes = ['/', '/login', '/signup'];
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -55,19 +52,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    if (loading) {
-      return;
-    }
-    
-    const isPublicRoute = publicRoutes.includes(pathname);
-    
-    if (!user && !isPublicRoute) {
-      router.push('/login');
-    }
-    
-  }, [user, loading, pathname, router]);
   
   const login = async ({ email, password }: LoginCredentials) => {
     return signInWithEmailAndPassword(auth, email, password);
@@ -95,7 +79,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    // This is the key: navigate away from the protected route FIRST.
     router.push('/');
+    // Then sign out.
     await signOut(auth);
   };
 

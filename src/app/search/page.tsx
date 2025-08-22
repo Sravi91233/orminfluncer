@@ -1,20 +1,15 @@
 'use client';
 
-import { useAuth } from '@/hooks/use-auth';
 import { AppLayout } from '@/components/layout/app-layout';
-import { PageLoading } from '@/components/layout/page-loading';
 import { InfluencerSearchPage } from '@/components/search/influencer-search-page';
+import { ProtectedRoute } from '@/components/auth/protected-route';
 
 export default function SearchPage() {
-  const { user, loading } = useAuth();
-
-  if (loading || !user) {
-    return <PageLoading />;
-  }
-
   return (
-    <AppLayout>
-      <InfluencerSearchPage />
-    </AppLayout>
+    <ProtectedRoute>
+      <AppLayout>
+        <InfluencerSearchPage />
+      </AppLayout>
+    </ProtectedRoute>
   );
 }
