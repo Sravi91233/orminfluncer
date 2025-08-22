@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
+  isLoggingOut: boolean;
   login: (credentials: LoginCredentials) => Promise<any>;
   signup: (credentials: SignupCredentials) => Promise<any>;
   logout: () => Promise<void>;
@@ -21,6 +22,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -47,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setUser(null);
       }
+      setIsLoggingOut(false);
       setLoading(false);
     });
 
@@ -79,15 +82,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    // This is the key: navigate away from the protected route FIRST.
+    setIsLoggingOut(true);
     router.push('/');
-    // Then sign out.
     await signOut(auth);
   };
 
   const value = {
     user,
     loading,
+    isLoggingOut,
     login,
     signup,
     logout,

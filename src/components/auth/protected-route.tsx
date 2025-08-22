@@ -11,12 +11,13 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+  const { user, loading, isLoggingOut } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (loading) {
-      return; // Wait for auth state to load
+    // Wait for auth state to load and ensure we are not in the process of logging out.
+    if (loading || isLoggingOut) {
+      return; 
     }
 
     if (!user) {
@@ -29,11 +30,11 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
        router.replace('/dashboard'); // Or a dedicated "access-denied" page
     }
 
-  }, [user, loading, router, roles]);
+  }, [user, loading, router, roles, isLoggingOut]);
 
-  // While loading auth state, or if user is not authenticated, show a loading screen.
+  // While loading auth state, if logging out, or if user is unauthorized, show a loading screen.
   // This prevents a flash of content before the redirect happens.
-  if (loading || !user || (roles && !roles.includes(user.role))) {
+  if (loading || isLoggingOut || !user || (roles && !roles.includes(user.role))) {
     return <PageLoading />;
   }
 
