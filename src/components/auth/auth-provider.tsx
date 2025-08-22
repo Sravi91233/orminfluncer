@@ -18,7 +18,7 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const publicRoutes = ['/landingpage', '/login', '/signup'];
+const publicRoutes = ['/', '/login', '/signup'];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     
-    const isPublicRoute = publicRoutes.includes(pathname) || pathname === '/';
+    const isPublicRoute = publicRoutes.includes(pathname);
     
     if (!user && !isPublicRoute) {
       router.push('/login');
@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    router.push('/landingpage');
+    router.push('/');
     await signOut(auth);
   };
 
