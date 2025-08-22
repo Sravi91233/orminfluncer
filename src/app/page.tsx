@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { PageLoading } from '@/components/layout/page-loading';
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -21,6 +22,9 @@ export default function Home() {
     }
   }, [user, loading, router]);
 
+  if (loading || (!loading && user)) {
+    return <PageLoading />;
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
