@@ -30,17 +30,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleLogout = async () => {
-    await logout();
+  const handleLogout = () => {
+    router.push('/logout');
   };
 
   const menuItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, admin: false },
-    { href: 'search', label: 'Search', icon: Search, admin: false },
+    { href: '/search', label: 'Search', icon: Search, admin: false },
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, admin: true },
     { href: '/admin/users', label: 'Users', icon: Users, admin: true },
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart3, admin: true },

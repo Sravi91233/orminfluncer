@@ -79,10 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    // This is the definitive fix.
-    // Navigate to a public page BEFORE signing out to prevent the race condition.
-    router.push('/');
-    await signOut(auth);
+    router.push('/logout');
   };
 
   const value = {
