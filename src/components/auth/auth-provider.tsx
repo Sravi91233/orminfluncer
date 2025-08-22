@@ -18,7 +18,7 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.Node }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -79,7 +79,8 @@ export function AuthProvider({ children }: { children: React.Node }) {
   };
 
   const logout = async () => {
-    // Navigate home first, then sign out. This prevents the race condition.
+    // This is the definitive fix.
+    // Navigate to a public page BEFORE signing out to prevent the race condition.
     router.push('/');
     await signOut(auth);
   };
