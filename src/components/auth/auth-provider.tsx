@@ -1,37 +1,47 @@
 'use client';
 
 import { createContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, User, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import type { LoginCredentials, SignupCredentials } from '@/types';
-
-interface UserProfile extends User {
-  role: 'admin' | 'user';
-}
+import { onAuthStateChanged, User, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import type { LoginCredentials, SignupCredentials, AppUser } from '@/types';
 
 interface AuthContextType {
-  user: UserProfile | null;
+  user: AppUser | null;
   loading: boolean;
   login: (credentials: LoginCredentials) => Promise<any>;
   signup: (credentials: SignupCredentials) => Promise<any>;
   logout: () => Promise<void>;
+  signInWithGoogle: () => Promise<any>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // In a real app, you'd fetch the user's role from your database
-        const userProfile: UserProfile = {
-          ...firebaseUser,
-          role: firebaseUser.email === 'admin@example.com' ? 'admin' : 'user',
-        };
-        setUser(userProfile);
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          setUser(userSnap.data() as AppUser);
+        } else {
+          // This case might happen if a user is created in Auth but not in Firestore
+          // Or for Google sign-in on the first time.
+           const newUser: AppUser = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email!,
+            name: firebaseUser.displayName,
+            role: 'user',
+            createdAt: serverTimestamp(),
+            photoURL: firebaseUser.photoURL,
+          };
+          await setDoc(userRef, newUser);
+          setUser(newUser);
+        }
       } else {
         setUser(null);
       }
@@ -40,13 +50,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => unsubscribe();
   }, []);
-
+  
   const login = async ({ email, password }: LoginCredentials) => {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
-  const signup = async ({ email, password }: SignupCredentials) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  const signup = async ({ email, password, name }: SignupCredentials) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const firebaseUser = userCredential.user;
+    const userRef = doc(db, 'users', firebaseUser.uid);
+    const newUser: AppUser = {
+      id: firebaseUser.uid,
+      email: firebaseUser.email!,
+      name: name || null,
+      role: 'user',
+      createdAt: serverTimestamp(),
+      photoURL: firebaseUser.photoURL,
+    };
+    await setDoc(userRef, newUser);
+    return userCredential;
+  };
+
+  const signInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    return signInWithPopup(auth, provider);
   };
 
   const logout = async () => {
@@ -59,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     signup,
     logout,
+    signInWithGoogle,
   };
 
   return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;

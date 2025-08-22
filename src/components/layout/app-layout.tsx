@@ -19,7 +19,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
-import { BarChart3, LogOut, Search, Users, Bot } from 'lucide-react';
+import { BarChart3, LayoutDashboard, LogOut, Search, Users, Bot } from 'lucide-react';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
@@ -32,18 +32,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const menuItems = [
-    { href: '/', label: 'Search', icon: Search },
-    ...(user?.role === 'admin'
-      ? [
-          { href: '/admin/users', label: 'Users', icon: Users },
-          { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
-        ]
-      : []),
-  ];
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, admin: false },
+    { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, admin: true },
+    { href: '/', label: 'Search', icon: Search, admin: false },
+    { href: '/admin/users', label: 'Users', icon: Users, admin: true },
+    { href: '/admin/analytics', label: 'Analytics', icon: BarChart3, admin: true },
+  ].filter(item => user?.role === 'admin' ? item.admin : !item.admin);
 
-  const getInitials = (email?: string | null) => {
-    if (!email) return 'U';
-    return email.substring(0, 2).toUpperCase();
+
+  const getInitials = (name?: string | null, email?: string | null) => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+    }
+    if (email) {
+      return email.substring(0, 2).toUpperCase();
+    }
+    return 'U';
   };
 
   return (
@@ -75,11 +79,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8">
               <AvatarImage src={user?.photoURL || ''} />
-              <AvatarFallback>{getInitials(user?.email)}</AvatarFallback>
+              <AvatarFallback>{getInitials(user?.name, user?.email)}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col overflow-hidden">
-              <span className="text-sm font-medium truncate">{user?.displayName || user?.email}</span>
-              <span className="text-xs text-muted-foreground">{user?.role}</span>
+              <span className="text-sm font-medium truncate">{user?.name || user?.email}</span>
+              <span className="text-xs text-muted-foreground capitalize">{user?.role}</span>
             </div>
             <Button variant="ghost" size="icon" className="ml-auto" onClick={handleLogout}>
               <LogOut className="h-4 w-4" />

@@ -1,9 +1,12 @@
+import { FieldValue } from "firebase/firestore";
+
 export interface LoginCredentials {
   email: string;
   password?: string;
 }
 
 export interface SignupCredentials extends LoginCredentials {
+  name?: string;
   password_confirm?: string;
 }
 
@@ -21,8 +24,11 @@ export interface Influencer {
 export interface AppUser {
   id: string;
   email: string;
+  name: string | null;
   role: 'admin' | 'user';
-  status: 'active' | 'disabled';
+  status?: 'active' | 'disabled';
+  createdAt: FieldValue;
+  photoURL?: string | null;
 }
 
 export interface AnalyticsData {
