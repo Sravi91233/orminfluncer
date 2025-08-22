@@ -1,10 +1,11 @@
 import * as admin from 'firebase-admin';
-import { getApps } from 'firebase-admin/app';
+import { getApps, initializeApp } from 'firebase-admin/app';
 
-if (!getApps().length) {
-  admin.initializeApp({
+const appName = 'admin-app';
+if (!getApps().some(app => app?.name === appName)) {
+  initializeApp({
     credential: admin.credential.applicationDefault(),
-  });
+  }, appName);
 }
 
 const db = admin.firestore();
