@@ -19,7 +19,15 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
-import { BarChart3, LayoutDashboard, LogOut, Search, Users, Bot } from 'lucide-react';
+import { BarChart3, LayoutDashboard, LogOut, Search, Users, Bot, UserCircle } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
@@ -85,9 +93,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="text-sm font-medium truncate">{user?.name || user?.email}</span>
               <span className="text-xs text-muted-foreground capitalize">{user?.role}</span>
             </div>
-            <Button variant="ghost" size="icon" className="ml-auto" onClick={handleLogout}>
-              <LogOut className="h-4 w-4" />
-            </Button>
           </div>
         </SidebarFooter>
       </Sidebar>
@@ -97,6 +102,32 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex-1">
             {/* Can add breadcrumbs or page title here */}
           </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user?.photoURL || ''} />
+                  <AvatarFallback>{getInitials(user?.name, user?.email)}</AvatarFallback>
+                </Avatar>
+                 <span className="sr-only">Toggle user menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user?.name}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user?.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
         <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
       </SidebarInset>
