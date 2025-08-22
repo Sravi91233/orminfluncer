@@ -23,7 +23,6 @@ const publicRoutes = ['/landingpage', '/login', '/signup'];
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -50,7 +49,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } else {
         setUser(null);
-        setIsLoggingOut(false); // Reset logging out state once user is confirmed null
       }
       setLoading(false);
     });
@@ -59,16 +57,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (loading || isLoggingOut) {
-      return; // Do nothing while loading or logging out
+    if (loading) {
+      return;
     }
     
-    // If there's no user, and we're not on a public route, redirect to login
-    if (!user && !publicRoutes.includes(pathname) && pathname !== '/') {
+    const isPublicRoute = publicRoutes.includes(pathname) || pathname === '/';
+    
+    if (!user && !isPublicRoute) {
       router.push('/login');
     }
     
-  }, [user, loading, pathname, router, isLoggingOut]);
+  }, [user, loading, pathname, router]);
   
   const login = async ({ email, password }: LoginCredentials) => {
     return signInWithEmailAndPassword(auth, email, password);
@@ -96,7 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    setIsLoggingOut(true);
     router.push('/landingpage');
     await signOut(auth);
   };
