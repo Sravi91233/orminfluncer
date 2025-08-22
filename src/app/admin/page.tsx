@@ -12,12 +12,8 @@ export default function AdminDashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        router.replace('/login');
-      } else if (user.role !== 'admin') {
-        router.replace('/dashboard');
-      }
+    if (!loading && user?.role !== 'admin') {
+      router.replace('/dashboard');
     }
   }, [user, loading, router]);
 

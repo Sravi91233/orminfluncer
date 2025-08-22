@@ -5,6 +5,7 @@ import { onAuthStateChanged, User, signOut, createUserWithEmailAndPassword, sign
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { LoginCredentials, SignupCredentials, AppUser } from '@/types';
+import { usePathname, useRouter } from 'next/navigation';
 
 interface AuthContextType {
   user: AppUser | null;
@@ -17,9 +18,13 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const publicRoutes = ['/', '/login', '/signup'];
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -27,7 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userRef = doc(db, 'users', firebaseUser.uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-          setUser(userSnap.data() as AppUser);
+          const appUser = userSnap.data() as AppUser;
+          setUser(appUser);
         } else {
           // This case might happen if a user is created in Auth but not in Firestore
           // Or for Google sign-in on the first time.
@@ -50,6 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!loading && !user && !publicRoutes.includes(pathname)) {
+      router.push('/login');
+    }
+  }, [user, loading, pathname, router]);
   
   const login = async ({ email, password }: LoginCredentials) => {
     return signInWithEmailAndPassword(auth, email, password);
@@ -78,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     await signOut(auth);
+    router.push('/');
   };
 
   const value = {

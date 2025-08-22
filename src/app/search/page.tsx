@@ -1,21 +1,12 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { PageLoading } from '@/components/layout/page-loading';
 import { InfluencerSearchPage } from '@/components/search/influencer-search-page';
 
 export default function SearchPage() {
   const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
-    }
-  }, [user, loading, router]);
 
   if (loading || !user) {
     return <PageLoading />;

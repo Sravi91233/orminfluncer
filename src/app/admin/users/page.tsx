@@ -13,12 +13,8 @@ export default function AdminUsersPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        router.replace('/login');
-      } else if (user.role !== 'admin') {
-        router.replace('/');
-      }
+    if (!loading && user?.role !== 'admin') {
+      router.replace('/');
     }
   }, [user, loading, router]);
 

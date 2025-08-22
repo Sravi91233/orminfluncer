@@ -36,13 +36,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/');
   };
 
   const menuItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, admin: false },
+    { href: 'search', label: 'Search', icon: Search, admin: false },
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, admin: true },
-    { href: '/search', label: 'Search', icon: Search, admin: false },
     { href: '/admin/users', label: 'Users', icon: Users, admin: true },
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart3, admin: true },
   ].filter(item => user?.role === 'admin' ? item.admin : !item.admin);
