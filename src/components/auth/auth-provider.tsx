@@ -6,6 +6,7 @@ import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { LoginCredentials, SignupCredentials, AppUser } from '@/types';
 import { useRouter } from 'next/navigation';
+import { verifyOtp } from '@/ai/flows/verify-otp-flow';
 
 interface AuthContextType {
   user: AppUser | null;
@@ -57,10 +58,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
-  const signup = async ({ email, password, name }: SignupCredentials) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const signup = async ({ email, password, name, otp }: SignupCredentials) => {
+    if (!otp) {
+        throw new Error('OTP is required for signup.');
+    }
+    
+    // 1. Verify the OTP
+    const verificationResult = await verifyOtp({ email, otp });
+    if (!verificationResult.success) {
+      throw new Error(verificationResult.message || 'Invalid OTP.');
+    }
+    
+    // 2. If OTP is valid, create the user
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password!);
     const firebaseUser = userCredential.user;
     const userRef = doc(db, 'users', firebaseUser.uid);
+    
+    // 3. Create user document in Firestore
     const newUser: AppUser = {
       id: firebaseUser.uid,
       email: firebaseUser.email!,

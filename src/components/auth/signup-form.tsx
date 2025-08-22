@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { LoaderCircle } from 'lucide-react';
 import { Separator } from '../ui/separator';
-
+import { sendOtp } from '@/ai/flows/send-otp-flow';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {...props}>
@@ -30,6 +30,7 @@ const formSchema = z
     email: z.string().email({ message: 'Please enter a valid email.' }),
     password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
     password_confirm: z.string(),
+    otp: z.string().optional(),
   })
   .refine((data) => data.password === data.password_confirm, {
     message: "Passwords don't match",
@@ -42,6 +43,7 @@ export function SignupForm() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isOtpSent, setIsOtpSent] = useState(false);
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -51,6 +53,7 @@ export function SignupForm() {
       email: '',
       password: '',
       password_confirm: '',
+      otp: '',
     },
   });
 
@@ -62,11 +65,51 @@ export function SignupForm() {
     }
   }
 
+  async function handleSendOtp() {
+    // Trigger validation for email field before sending OTP
+    const isEmailValid = await form.trigger('email');
+    if (!isEmailValid) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Email',
+        description: 'Please enter a valid email address to receive the verification code.',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const email = form.getValues('email');
+      const result = await sendOtp({ email });
+      if (result.success) {
+        toast({
+          title: 'Code Sent',
+          description: result.message,
+        });
+        setIsOtpSent(true);
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to Send Code',
+        description: error.message || 'An unexpected error occurred.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const { user } = await signup(values);
-      handleRedirect(user);
+      await signup(values);
+      toast({
+        title: 'Signup Successful',
+        description: 'You have successfully created an account.',
+      });
+      router.push('/dashboard');
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -111,7 +154,7 @@ export function SignupForm() {
                 <FormItem>
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="John Doe" {...field} />
+                    <Input placeholder="John Doe" {...field} disabled={isOtpSent} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -124,7 +167,7 @@ export function SignupForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="name@example.com" {...field} />
+                    <Input placeholder="name@example.com" {...field} disabled={isOtpSent} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -137,7 +180,7 @@ export function SignupForm() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
+                    <Input type="password" placeholder="••••••••" {...field} disabled={isOtpSent} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -150,16 +193,40 @@ export function SignupForm() {
                 <FormItem>
                   <FormLabel>Confirm Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
+                    <Input type="password" placeholder="••••••••" {...field} disabled={isOtpSent} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
-              {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-              Create Account
-            </Button>
+
+            {isOtpSent && (
+              <FormField
+                control={form.control}
+                name="otp"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Verification Code</FormLabel>
+                    <FormControl>
+                      <Input placeholder="123456" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {!isOtpSent ? (
+              <Button type="button" className="w-full" disabled={isLoading || isGoogleLoading} onClick={handleSendOtp}>
+                {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                Send Verification Code
+              </Button>
+            ) : (
+              <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
+                {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                Verify & Create Account
+              </Button>
+            )}
           </form>
         </Form>
         <Separator className="my-4" />
