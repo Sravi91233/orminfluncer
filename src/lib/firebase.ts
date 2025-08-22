@@ -14,7 +14,7 @@ const firebaseConfig = {
 };
 
 const appName = 'client-app';
-const app = getApps().find(app => app.name === appName) || initializeApp(firebaseConfig, appName);
+const app = getApps().length ? getApp(appName) : initializeApp(firebaseConfig, appName);
 const auth = getAuth(app);
 const db = getFirestore(app);
 

@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin';
-import { getApps, initializeApp } from 'firebase-admin/app';
+import { getApps, initializeApp, getApp } from 'firebase-admin/app';
 
 const appName = 'admin-app';
 if (!getApps().some(app => app?.name === appName)) {
@@ -8,7 +8,8 @@ if (!getApps().some(app => app?.name === appName)) {
   }, appName);
 }
 
-const db = admin.firestore();
+const adminApp = getApp(appName);
+const db = admin.firestore(adminApp);
 
 export function getAdminDb() {
   return db;
