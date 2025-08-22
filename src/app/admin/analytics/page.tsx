@@ -12,7 +12,7 @@ export default function AdminAnalyticsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user?.role !== 'admin') {
+    if (!loading && (!user || user.role !== 'admin')) {
       router.replace('/');
     }
   }, [user, loading, router]);
