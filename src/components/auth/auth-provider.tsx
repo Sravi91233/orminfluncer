@@ -10,7 +10,6 @@ import { useRouter } from 'next/navigation';
 interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
-  isLoggingOut: boolean;
   login: (credentials: LoginCredentials) => Promise<any>;
   signup: (credentials: SignupCredentials) => Promise<any>;
   logout: () => Promise<void>;
@@ -19,10 +18,9 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: React.Node }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -49,7 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setUser(null);
       }
-      setIsLoggingOut(false);
       setLoading(false);
     });
 
@@ -82,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    setIsLoggingOut(true);
+    // Navigate home first, then sign out. This prevents the race condition.
     router.push('/');
     await signOut(auth);
   };
@@ -90,7 +87,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = {
     user,
     loading,
-    isLoggingOut,
     login,
     signup,
     logout,

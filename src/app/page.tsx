@@ -13,6 +13,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
+    // If we're done loading and the user is logged in, redirect them.
     if (!loading && user) {
       if (user.role === 'admin') {
         router.replace('/admin');
@@ -22,10 +23,12 @@ export default function Home() {
     }
   }, [user, loading, router]);
 
-  if (loading || (!loading && user)) {
+  // While checking auth state or if user exists (and is about to be redirected), show loading.
+  if (loading || user) {
     return <PageLoading />;
   }
-
+  
+  // If not loading and no user, show the landing page.
   return (
     <div className="flex flex-col min-h-screen">
       <header className="px-4 lg:px-6 h-14 flex items-center">

@@ -11,6 +11,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // If done loading and there's a user, redirect them away from the login page.
     if (!loading && user) {
       if (user.role === 'admin') {
         router.replace('/admin');
@@ -20,12 +21,12 @@ export default function LoginPage() {
     }
   }, [user, loading, router]);
 
-  // While checking auth state or if user is logged in, show loading
+  // While loading or if user exists (and is about to be redirected), show loading.
   if (loading || user) {
     return <PageLoading />;
   }
 
-  // Only show login form if not loading and no user is authenticated
+  // Only show login form if not loading and no user is authenticated.
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
