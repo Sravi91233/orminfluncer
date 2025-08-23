@@ -21,22 +21,13 @@ const searchInfluencersFlow = ai.defineFlow(
     outputSchema: SearchInfluencersOutputSchema,
   },
   async (input) => {
+    console.log('[searchInfluencersFlow] Flow started with input:', input);
+
     // TODO: Replace this hardcoded key with a call to a secure Cloud Function
     // that retrieves the key from Firestore. This is a temporary fix to bypass
     // Firestore security rule issues during development.
     const apiKey = 'ed81c08da2msh81f3e4df68af3ebp1c9d7ajsn929105d62758';
     
-    // The original call to get the key from Firestore. This will be restored
-    // once a secure server-to-server authentication method is in place.
-    // const apiKeyData = await getApiKey('x-rapidapi-key');
-    // if (!apiKeyData) {
-    //   return {
-    //     success: false,
-    //     message: 'API key for influencer search is not configured. Please contact support.',
-    //     results: [],
-    //   };
-    // }
-
     const { city, category, platform, bio, currentPage = 1 } = input;
     
     const queryParams = new URLSearchParams({
@@ -51,6 +42,13 @@ const searchInfluencersFlow = ai.defineFlow(
 
     const url = `https://ylytic-influencers-api.p.rapidapi.com/ylytic/admin/api/v1/discovery?${queryParams.toString()}`;
 
+    // Construct and log the curl command
+    const curlCommand = `curl -X GET '${url}' \\
+-H 'x-rapidapi-key: ${apiKey.slice(0, 4)}...${apiKey.slice(-4)}' \\
+-H 'x-rapidapi-host: ylytic-influencers-api.p.rapidapi.com'`;
+    console.log('\n[searchInfluencersFlow] EXECUTING API CALL:');
+    console.log(curlCommand, '\n');
+
     try {
       const response = await fetch(url, {
         method: 'GET',
@@ -60,13 +58,17 @@ const searchInfluencersFlow = ai.defineFlow(
         },
       });
 
+      console.log(`[searchInfluencersFlow] Received API response with status: ${response.status}`);
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`API Error (${response.status}): ${errorText}`);
+        console.error(`[searchInfluencersFlow] API Error (${response.status}): ${errorText}`);
         throw new Error(`Failed to fetch influencers. Status: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log(`[searchInfluencersFlow] Successfully parsed JSON response.`);
+
 
       const results: Influencer[] = (data.creators || []).map((creator: any, index: number) => ({
         id: creator.handle_link || index, // Use handle_link as a unique ID
@@ -80,8 +82,7 @@ const searchInfluencersFlow = ai.defineFlow(
         category: creator.category || 'N/A',
       }));
 
-      // This will be re-enabled when the key is fetched from Firestore again.
-      // updateApiKeyLastUsed(apiKeyData.id);
+      console.log(`[searchInfluencersFlow] API fetch complete. Total creators found: ${results.length}`);
 
       return {
         success: true,
@@ -89,7 +90,7 @@ const searchInfluencersFlow = ai.defineFlow(
         results,
       };
     } catch (error: any) {
-      console.error('Error in searchInfluencersFlow:', error);
+      console.error('[searchInfluencersFlow] Error in searchInfluencersFlow:', error);
       return {
         success: false,
         message: error.message || 'An unexpected error occurred during the search.',
