@@ -16,18 +16,16 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpDown, Download, LoaderCircle, Search, Twitter, Youtube, Instagram, Briefcase, Maximize, User, MapPin, BarChart2 } from 'lucide-react';
+import { ArrowUpDown, Download, LoaderCircle, Search, Youtube, Instagram, Briefcase, Maximize, User, MapPin, BarChart2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { useSearchParams } from 'next/navigation';
 
 const searchFormSchema = z.object({
-  city: z.string().optional(),
-  country: z.string().optional(),
+  city: z.string().min(1, { message: "City is required." }),
   category: z.string().optional(),
-  followerCount: z.coerce.number().min(0).optional(),
-  currentSearchTerms: z.string().optional(),
+  platform: z.string().optional(),
+  bio: z.string().optional(),
 });
 
 type SortKey = keyof Influencer;
@@ -41,8 +39,11 @@ const PlatformIcon = ({ platform }: { platform: Influencer['platform'] }) => {
     }
 }
 
+const uniqueCities = [...new Set(influencers.map(i => i.city))].sort();
+const uniquePlatforms = [...new Set(influencers.map(i => i.platform))].sort();
+
+
 export function InfluencerSearchPage() {
-  const searchParams = useSearchParams();
   const [results, setResults] = React.useState<Influencer[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isAiLoading, setIsAiLoading] = React.useState(false);
@@ -58,61 +59,35 @@ export function InfluencerSearchPage() {
 
   const form = useForm<z.infer<typeof searchFormSchema>>({
     resolver: zodResolver(searchFormSchema),
-    defaultValues: { city: '', country: '', category: '', followerCount: 0, currentSearchTerms: searchParams.get('q') || '' },
+    defaultValues: { city: '', category: '', platform: '', bio: '' },
   });
   
-  React.useEffect(() => {
-    if (form.getValues('currentSearchTerms')) {
-      handleSearch(form.getValues());
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleSearch = async (values: z.infer<typeof searchFormSchema>) => {
     setIsLoading(true);
-    setIsAiLoading(true);
     setSuggestions([]);
 
     // Simulate API call for search
     setTimeout(() => {
       let filtered = influencers;
       if (values.city) {
-        filtered = filtered.filter((i) => i.city.toLowerCase().includes(values.city!.toLowerCase()));
+        filtered = filtered.filter((i) => i.city === values.city);
       }
-      if (values.country) {
-        filtered = filtered.filter((i) => i.country?.toLowerCase().includes(values.country!.toLowerCase()));
+      if (values.platform && values.platform !== 'Any Platform') {
+        filtered = filtered.filter((i) => i.platform === values.platform);
       }
       if (values.category) {
-        filtered = filtered.filter((i) => i.category === values.category);
+        filtered = filtered.filter((i) => i.category.toLowerCase().includes(values.category!.toLowerCase()));
       }
-      if (values.followerCount) {
-        filtered = filtered.filter((i) => i.followers >= values.followerCount!);
-      }
-      if (values.currentSearchTerms) {
-        const terms = values.currentSearchTerms.toLowerCase().split(' ');
+      if (values.bio) {
+        const terms = values.bio.toLowerCase().split(' ');
         filtered = filtered.filter((i) => terms.every(term => 
-          i.handle.toLowerCase().includes(term) || i.bio.toLowerCase().includes(term)
+          i.bio.toLowerCase().includes(term)
         ));
       }
       setResults(filtered);
       setCurrentPage(1);
       setIsLoading(false);
     }, 500);
-
-    // AI Suggestions
-    try {
-      const aiResult = await suggestSearchTerms(values);
-      setSuggestions(aiResult.suggestedSearchTerms);
-    } catch (error) {
-      console.error('AI suggestion error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'AI Suggestion Failed',
-        description: 'Could not fetch search suggestions.',
-      });
-    } finally {
-      setIsAiLoading(false);
-    }
   };
   
   const handleViewDetails = (influencer: Influencer) => {
@@ -127,6 +102,13 @@ export function InfluencerSearchPage() {
     }
     setSortConfig({ key, direction });
   };
+  
+  const handleReset = () => {
+    form.reset();
+    setResults([]);
+    setSuggestions([]);
+    setCurrentPage(1);
+  }
 
   const sortedResults = React.useMemo(() => {
     let sortableItems = [...results];
@@ -147,12 +129,6 @@ export function InfluencerSearchPage() {
   const paginatedResults = sortedResults.slice((currentPage - 1) * resultsPerPage, currentPage * resultsPerPage);
   const totalPages = Math.ceil(results.length / resultsPerPage);
 
-  const handleSuggestionClick = (suggestion: string) => {
-    const currentTerms = form.getValues('currentSearchTerms');
-    form.setValue('currentSearchTerms', `${currentTerms} ${suggestion}`.trim());
-    form.handleSubmit(handleSearch)();
-  };
-
   const handleExport = () => {
     if (results.length === 0) {
       toast({
@@ -170,63 +146,62 @@ export function InfluencerSearchPage() {
       <h1 className="text-3xl font-bold">Influencer Search</h1>
       <Card>
         <CardHeader>
-          <CardTitle>Search Filters</CardTitle>
+          <CardTitle>Search Criteria</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSearch)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-end">
-              <FormField name="currentSearchTerms" control={form.control} render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Keywords</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. vegan lifestyle" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}/>
-              <FormField name="city" control={form.control} render={({ field }) => (
-                <FormItem>
-                  <FormLabel>City</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. New York" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}/>
-              <FormField name="country" control={form.control} render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Country</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. USA" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}/>
-              <FormField name="category" control={form.control} render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <form onSubmit={form.handleSubmit(handleSearch)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <FormField name="city" control={form.control} render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City (Required)</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} required>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select city..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {uniqueCities.map(city => <SelectItem key={city} value={city}>{city}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}/>
+                <FormField name="category" control={form.control} render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
+                      <Input placeholder="e.g., gaming, fashion, food" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Fashion">Fashion</SelectItem>
-                      <SelectItem value="Fitness">Fitness</SelectItem>
-                      <SelectItem value="Food">Food</SelectItem>
-                      <SelectItem value="Travel">Travel</SelectItem>
-                      <SelectItem value="Tech">Tech</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}/>
-              <FormField name="followerCount" control={form.control} render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Min Followers</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="e.g. 10000" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}/>
-              <div className="lg:col-span-full flex justify-end">
+                  </FormItem>
+                )}/>
+                <FormField name="platform" control={form.control} render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Platform</FormLabel>
+                     <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Any Platform" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Any Platform">Any Platform</SelectItem>
+                        {uniquePlatforms.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}/>
+                <FormField name="bio" control={form.control} render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bio / Description Contains</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., daily outfits" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}/>
+              </div>
+              <div className="flex justify-end gap-2">
+                 <Button type="button" variant="outline" onClick={handleReset}>Reset</Button>
                 <Button type="submit" disabled={isLoading}>
                   {isLoading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4"/>}
                   Search
@@ -237,22 +212,6 @@ export function InfluencerSearchPage() {
         </CardContent>
       </Card>
       
-      {(isAiLoading || suggestions.length > 0) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              AI Suggestions
-              {isAiLoading && <LoaderCircle className="h-4 w-4 animate-spin text-primary" />}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            {suggestions.map((s, i) => (
-              <Badge key={i} variant="secondary" className="cursor-pointer hover:bg-accent" onClick={() => handleSuggestionClick(s)}>{s}</Badge>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
