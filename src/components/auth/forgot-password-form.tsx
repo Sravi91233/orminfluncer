@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
-import { LoaderCircle, Terminal } from 'lucide-react';
+import { LoaderCircle, MailCheck } from 'lucide-react';
 import { sendPasswordReset } from '@/ai/flows/send-password-reset-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -57,15 +57,15 @@ export function ForgotPasswordForm() {
         <CardHeader>
             <CardTitle className="text-2xl font-bold">Check Your Email</CardTitle>
             <CardDescription>
-                A password reset link has been sent to the email address you provided, if it exists in our system.
+                A password reset link has been sent to the email address you provided, if an account exists.
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-             <Alert variant="destructive">
-              <Terminal className="h-4 w-4" />
-              <AlertTitle>Not Receiving Emails?</AlertTitle>
+             <Alert>
+              <MailCheck className="h-4 w-4" />
+              <AlertTitle>Didn't get the email?</AlertTitle>
               <AlertDescription>
-                If you are using Gmail and have 2-Factor Authentication enabled, you must use a Google <b>App Password</b> in your Firebase SMTP configuration, not your regular password.
+                Please check your spam or junk folder. If it's still not there, please wait a few minutes before trying again.
               </AlertDescription>
             </Alert>
             <Button asChild className="w-full">
