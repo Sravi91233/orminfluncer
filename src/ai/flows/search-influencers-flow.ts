@@ -29,7 +29,7 @@ const searchInfluencersFlow = ai.defineFlow(
     const apiKey = 'ed81c08da2msh81f3e4df68af3ebp1c9d7ajsn929105d62758';
     
     const { city, category, platform, bio } = input;
-    const pagesToFetch = [1, 2, 3, 4, 5];
+    const pagesToFetch = [1, 2, 3];
     let allResults: Influencer[] = [];
 
     try {
