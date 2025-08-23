@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { suggestSearchTerms } from '@/ai/flows/suggest-search-terms';
-import type { Influencer } from '@/types';
+import type { AppCity, Influencer } from '@/types';
 // import { influencers } from '@/lib/mock-data'; // No longer using mock data
 import { exportToCsv } from '@/lib/csv-export';
 
@@ -20,6 +20,8 @@ import { ArrowUpDown, Download, LoaderCircle, Search, Youtube, Instagram, Briefc
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const searchFormSchema = z.object({
   city: z.string().min(1, { message: "City is required." }),
@@ -40,7 +42,6 @@ const PlatformIcon = ({ platform }: { platform: Influencer['platform'] }) => {
 }
 
 // In a real app, these would be fetched from a database
-const uniqueCities: string[] = ["New York", "Los Angeles", "Chicago", "London", "San Francisco", "Paris", "Miami", "Toronto", "Bangkok", "Austin", "Tokyo", "Boston"];
 const uniquePlatforms: string[] = ["Instagram", "TikTok", "YouTube"];
 
 
@@ -51,6 +52,7 @@ export function InfluencerSearchPage() {
   const [suggestions, setSuggestions] = React.useState<string[]>([]);
   const { toast } = useToast();
 
+  const [availableCities, setAvailableCities] = React.useState<string[]>([]);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [sortConfig, setSortConfig] = React.useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>(null);
   const resultsPerPage = 10;
@@ -62,6 +64,21 @@ export function InfluencerSearchPage() {
     resolver: zodResolver(searchFormSchema),
     defaultValues: { city: '', category: '', platform: '', bio: '' },
   });
+
+  React.useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const citiesCollection = collection(db, 'Cities');
+        const citySnapshot = await getDocs(citiesCollection);
+        const citiesList = citySnapshot.docs.map(doc => doc.data().name as string);
+        setAvailableCities(citiesList.sort());
+      } catch (error) {
+        console.error("Error fetching cities:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch cities for search form.' });
+      }
+    };
+    fetchCities();
+  }, [toast]);
   
   const handleSearch = async (values: z.infer<typeof searchFormSchema>) => {
     setIsLoading(true);
@@ -155,7 +172,7 @@ export function InfluencerSearchPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {uniqueCities.map(city => <SelectItem key={city} value={city}>{city}</SelectItem>)}
+                        {availableCities.map(city => <SelectItem key={city} value={city}>{city}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </FormItem>
