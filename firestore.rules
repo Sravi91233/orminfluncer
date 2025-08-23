@@ -2,18 +2,12 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check for admin role
-    function isAdmin() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Admin has full access to everything
+    // Admins can do anything
     match /{document=**} {
-      allow read, write: if isAdmin();
+      allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // By default, deny all reads and writes for non-admins unless explicitly allowed
+    // By default, deny all reads and writes
     match /{document=**} {
       allow read, write: if false;
     }
@@ -23,19 +17,11 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, update: if request.auth != null && request.auth.uid == userId;
       allow create: if request.auth != null;
-      // Admins can manage users, so this is covered by the global admin rule.
-      // No need for separate delete rule here for non-admins.
-    }
-    
-    // Admins can manage cities, covered by global rule.
-    match /Cities/{cityId} {
-        allow read: if request.auth != null; // All users can read cities
     }
 
-    // API Keys can only be managed by Admins. This rule is redundant
-    // due to the global admin rule but provides explicit clarity.
-    match /APIKeys/{keyId} {
-      allow read, write, create, delete: if isAdmin();
+    // Allow authenticated users to read the list of cities for the search form.
+    match /Cities/{cityId} {
+        allow read: if request.auth != null;
     }
 
     // Allow a client to create an OTP document for their own email.
@@ -46,6 +32,11 @@ service cloud.firestore {
       // Deny all other operations from the client for security.
       // The server-side verifyOtpFlow handles reading and deleting.
       allow read, update, delete: if false;
+    }
+
+    // Allow admins full access to the APIKeys collection
+    match /APIKeys/{keyId} {
+      allow read, write, create, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
