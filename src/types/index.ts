@@ -14,7 +14,7 @@ export interface SignupCredentials extends LoginCredentials {
 }
 
 export interface Influencer {
-  id: string | number;
+  id: string;
   handle: string;
   platform: 'Instagram' | 'TikTok' | 'YouTube' | string;
   followers: number;
@@ -108,7 +108,7 @@ export const SearchInfluencersInputSchema = z.object({
 export type SearchInfluencersInput = z.infer<typeof SearchInfluencersInputSchema>;
 
 export const InfluencerSchema = z.object({
-    id: z.union([z.string(), z.number()]),
+    id: z.string(),
     handle: z.string(),
     platform: z.string(),
     followers: z.number(),

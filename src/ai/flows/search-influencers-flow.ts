@@ -34,7 +34,7 @@ const searchInfluencersFlow = ai.defineFlow(
         current_page: currentPage.toString()
     });
 
-    if (city && city !== 'Any City') queryParams.append('country', city); // The API seems to use country filter for cities
+    if (city && city !== 'Any City') queryParams.append('city', city.toLowerCase());
     if (category) queryParams.append('category', category);
     if (platform && platform !== 'any') queryParams.append('connector', platform.toLowerCase());
     if (bio) queryParams.append('bio', bio);
@@ -70,8 +70,8 @@ const searchInfluencersFlow = ai.defineFlow(
       console.log(`[searchInfluencersFlow] Successfully parsed JSON response.`);
 
 
-      const results: Influencer[] = (data.creators || []).map((creator: any, index: number) => ({
-        id: creator.handle_link || index, // Use handle_link as a unique ID
+      const results: Influencer[] = (data.creators || []).map((creator: any) => ({
+        id: creator.handle_link, // Use handle_link as a unique string ID
         handle: creator.handle,
         platform: creator.connector.charAt(0).toUpperCase() + creator.connector.slice(1),
         followers: creator.followers || 0,
