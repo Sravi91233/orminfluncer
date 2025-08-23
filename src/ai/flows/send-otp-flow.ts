@@ -9,8 +9,6 @@ import { ai } from '@/ai/genkit';
 import { sendOtpEmail } from '@/services/email-service';
 import { SendOtpInputSchema, SendOtpOutputSchema } from '@/types';
 
-// This flow is now only responsible for sending the email.
-// The database write is handled on the client.
 export async function sendOtp(input: z.infer<typeof SendOtpInputSchema>): Promise<z.infer<typeof SendOtpOutputSchema>> {
   return sendOtpFlow(input);
 }
@@ -21,14 +19,11 @@ const sendOtpFlow = ai.defineFlow(
     inputSchema: SendOtpInputSchema,
     outputSchema: SendOtpOutputSchema,
   },
-  async ({ email, otp }) => {
-    if (!otp) {
-        return { success: false, message: 'OTP is required.' };
-    }
+  async ({ email }) => {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
     try {
-      // Send the OTP via email
       await sendOtpEmail({ to: email, otp });
-      return { success: true, message: 'OTP has been sent to your email.' };
+      return { success: true, message: 'OTP has been sent to your email.', otp };
     } catch (error: any) {
       console.error('Error in sendOtpFlow:', error);
       return { success: false, message: error.message || 'Failed to send OTP.' };

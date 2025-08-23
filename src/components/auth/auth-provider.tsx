@@ -1,12 +1,11 @@
 'use client';
 
 import { createContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, User, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInAnonymously } from 'firebase/auth';
+import { onAuthStateChanged, User, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { LoginCredentials, SignupCredentials, AppUser } from '@/types';
 import { useRouter } from 'next/navigation';
-import { verifyOtp } from '@/ai/flows/verify-otp-flow';
 
 interface AuthContextType {
   user: AppUser | null;
@@ -27,40 +26,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        if (firebaseUser.isAnonymous) {
-            // This is a temporary anonymous user.
-            // We can create a lightweight AppUser object for them.
-            setUser({
-                id: firebaseUser.uid,
-                email: 'anonymous',
-                name: 'Guest',
-                role: 'user',
-                createdAt: serverTimestamp(),
-            });
-        } else {
-            // This is a real, signed-in user.
-            const userRef = doc(db, 'users', firebaseUser.uid);
-            const userSnap = await getDoc(userRef);
-            if (userSnap.exists()) {
-                const appUser = userSnap.data() as AppUser;
-                setUser(appUser);
-            } else {
-                // This handles users signing in for the first time via Google
-                const newUser: AppUser = {
-                    id: firebaseUser.uid,
-                    email: firebaseUser.email!,
-                    name: firebaseUser.displayName,
-                    role: 'user',
-                    createdAt: serverTimestamp(),
-                    photoURL: firebaseUser.photoURL,
-                };
-                await setDoc(userRef, newUser);
-                setUser(newUser);
-            }
-        }
+          const userRef = doc(db, 'users', firebaseUser.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+              const appUser = userSnap.data() as AppUser;
+              setUser(appUser);
+          } else {
+              // This handles users signing in for the first time via Google
+              const newUser: AppUser = {
+                  id: firebaseUser.uid,
+                  email: firebaseUser.email!,
+                  name: firebaseUser.displayName,
+                  role: 'user',
+                  createdAt: serverTimestamp(),
+                  photoURL: firebaseUser.photoURL,
+              };
+              await setDoc(userRef, newUser);
+              setUser(newUser);
+          }
       } else {
-        // No user is signed in at all, sign them in anonymously.
-        await signInAnonymously(auth);
+        setUser(null);
       }
       setLoading(false);
     });
@@ -72,15 +57,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
-  const signup = async ({ email, password, name, otp }: SignupCredentials) => {
-    if (!otp) {
+  const signup = async ({ email, password, name, otp, otpForVerification }: SignupCredentials) => {
+    if (!otp || !otpForVerification) {
         throw new Error('OTP is required for signup.');
     }
-    
-    // 1. Verify the OTP
-    const verificationResult = await verifyOtp({ email, otp });
-    if (!verificationResult.success) {
-      throw new Error(verificationResult.message || 'Invalid OTP.');
+
+    if (otp !== otpForVerification) {
+      throw new Error('Invalid OTP.');
     }
     
     // 2. If OTP is valid, create the user

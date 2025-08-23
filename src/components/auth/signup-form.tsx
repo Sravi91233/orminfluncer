@@ -15,8 +15,6 @@ import { useState } from 'react';
 import { LoaderCircle } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { sendOtp } from '@/ai/flows/send-otp-flow';
-import { db } from '@/lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
 
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -47,6 +45,7 @@ export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isOtpSent, setIsOtpSent] = useState(false);
+  const [otpForVerification, setOtpForVerification] = useState<string | null>(null);
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -69,7 +68,6 @@ export function SignupForm() {
   }
 
   async function handleSendOtp() {
-    // Trigger validation for email field before sending OTP
     const isEmailValid = await form.trigger(['email', 'password']);
     if (!isEmailValid) {
       toast({
@@ -83,23 +81,13 @@ export function SignupForm() {
     setIsLoading(true);
     try {
       const email = form.getValues('email');
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
-
-      // Write OTP to Firestore from the client
-      await setDoc(doc(db, 'otp', email), {
-        email,
-        otp,
-        expiresAt,
-      });
-
-      // Call the server flow just to send the email
-      const result = await sendOtp({ email, otp });
+      const result = await sendOtp({ email });
       if (result.success) {
         toast({
           title: 'Code Sent',
           description: result.message,
         });
+        setOtpForVerification(result.otp!);
         setIsOtpSent(true);
       } else {
         throw new Error(result.message);
@@ -118,7 +106,7 @@ export function SignupForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      await signup(values);
+      await signup({ ...values, otpForVerification: otpForVerification || undefined });
       toast({
         title: 'Signup Successful',
         description: 'You have successfully created an account.',

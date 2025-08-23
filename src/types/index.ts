@@ -10,6 +10,7 @@ export interface SignupCredentials extends LoginCredentials {
   name?: string;
   password_confirm?: string;
   otp?: string;
+  otpForVerification?: string;
 }
 
 export interface Influencer {
@@ -42,13 +43,13 @@ export interface AnalyticsData {
 // Schema for sending OTP
 export const SendOtpInputSchema = z.object({
   email: z.string().email(),
-  otp: z.string().optional(),
 });
 export type SendOtpInput = z.infer<typeof SendOtpInputSchema>;
 
 export const SendOtpOutputSchema = z.object({
   success: z.boolean(),
   message: z.string(),
+  otp: z.string().optional(),
 });
 export type SendOtpOutput = z.infer<typeof SendOtpOutputSchema>;
 
