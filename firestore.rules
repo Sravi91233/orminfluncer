@@ -3,34 +3,34 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Admins can read and write all data.
-    match /{document=**} {
-      allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Allow users to read and update their own profile.
-    // Allow users to be created on signup.
+    // User-specific rules: Users can read/update their own profile and can be created.
     match /users/{userId} {
       allow read, update: if request.auth != null && request.auth.uid == userId;
       allow create: if request.auth != null;
     }
 
-    // Allow a client to create an OTP document for their own email.
+    // Cities rules: Any authenticated user can read the list of cities.
+    // Admins have write access defined by the rule below.
+    match /Cities/{cityId} {
+        allow read: if request.auth != null;
+    }
+    
+    // APIKeys rules: Authenticated functions can read keys.
+    // Admins have write access defined by the rule below.
+    match /APIKeys/{keyId} {
+        allow read: if request.auth != null;
+    }
+
+    // OTP rules: A client can create an OTP for their own email, but can't read/update/delete.
     match /otp/{email} {
       allow create: if request.resource.data.email == email;
       allow read, update, delete: if false;
     }
 
-    // Allow any authenticated user to read the list of cities.
-    match /Cities/{cityId} {
-      allow read: if request.auth != null;
-    }
-
-    // Allow server-side functions (like our search flow) to read API Keys.
-    // Deny all client-side access for security.
-    match /APIKeys/{keyId} {
-      allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      allow write, create, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    // Admin-only catch-all: If a user has the 'admin' role, they can read/write to any document.
+    // This rule is checked if none of the more specific rules above match.
+    match /{document=**} {
+      allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
