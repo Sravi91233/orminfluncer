@@ -61,7 +61,7 @@ export function InfluencerSearchPage() {
 
   const form = useForm<z.infer<typeof searchFormSchema>>({
     resolver: zodResolver(searchFormSchema),
-    defaultValues: { city: '', category: '', platform: '', bio: '' },
+    defaultValues: { city: '', category: '', platform: 'any', bio: '' },
   });
 
   React.useEffect(() => {
@@ -82,9 +82,14 @@ export function InfluencerSearchPage() {
   const handleSearch = async (values: z.infer<typeof searchFormSchema>) => {
     setIsLoading(true);
     setSuggestions([]);
+
+    const searchParams = { ...values, currentPage };
+    if (searchParams.platform === 'any') {
+      searchParams.platform = '';
+    }
     
     try {
-      const response = await searchInfluencers({ ...values, currentPage });
+      const response = await searchInfluencers(searchParams);
       if (response.success) {
         setResults(response.results);
       } else {
@@ -213,7 +218,7 @@ export function InfluencerSearchPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Any Platform">Any Platform</SelectItem>
+                        <SelectItem value="any">Any Platform</SelectItem>
                         {uniquePlatforms.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                       </SelectContent>
                     </Select>
