@@ -29,13 +29,14 @@ const searchInfluencersFlow = ai.defineFlow(
     const apiKey = 'ed81c08da2msh81f3e4df68af3ebp1c9d7ajsn929105d62758';
     
     const { city, category, platform, bio } = input;
-    const MAX_PAGES_TO_FETCH = 5;
+    const MAX_PAGES_TO_FETCH = 5; // Safety limit
 
     let allResults: Influencer[] = [];
     let currentPage = 1;
-    let pageMaximum = 1;
+    let pageMaximum = 1; // Start with 1 to ensure the loop runs at least once
 
     try {
+      // Loop until we've fetched all pages or hit our safety limit
       while (currentPage <= pageMaximum && currentPage <= MAX_PAGES_TO_FETCH) {
         const queryParams = new URLSearchParams({
             current_page: currentPage.toString()
@@ -55,6 +56,7 @@ const searchInfluencersFlow = ai.defineFlow(
         console.log(`\n[searchInfluencersFlow] EXECUTING API CALL FOR PAGE ${currentPage}:`);
         console.log(curlCommand, '\n');
 
+        // This try/catch is inside the loop to handle failures for a single page
         try {
             const response = await fetch(url, {
                 method: 'GET',
@@ -68,7 +70,7 @@ const searchInfluencersFlow = ai.defineFlow(
             if (!response.ok) {
                const errorText = await response.text();
                console.error(`[searchInfluencersFlow] API Error for page ${currentPage} (${response.status}): ${errorText}`);
-               // Continue to next page if one fails
+               // This allows the loop to continue even if one page fails
                currentPage++;
                continue;
             }
@@ -76,6 +78,7 @@ const searchInfluencersFlow = ai.defineFlow(
            const data = await response.json();
            console.log(`[searchInfluencersFlow] Successfully parsed JSON for page ${currentPage}.`);
            
+           // On the first page, learn how many total pages are available.
            if (currentPage === 1) {
               pageMaximum = data.page_maximum || 1;
            }
@@ -96,9 +99,11 @@ const searchInfluencersFlow = ai.defineFlow(
            console.log(`[searchInfluencersFlow] Page ${currentPage} processed. Total creators so far: ${allResults.length}`);
 
         } catch (pageError) {
+           // Catch errors for a single page fetch (e.g., network error)
            console.error(`[searchInfluencersFlow] Failed to fetch or process page ${currentPage}.`, pageError);
         }
 
+        // Move to the next page for the next iteration
         currentPage++;
       }
 
@@ -111,7 +116,8 @@ const searchInfluencersFlow = ai.defineFlow(
         results: allResults,
       };
     } catch (error: any) {
-      console.error('[searchInfluencersFlow] Error in searchInfluencersFlow:', error);
+      // This outer catch handles errors outside the loop (e.g., initial setup issues)
+      console.error('[searchInfluencersFlow] A critical error occurred in the flow:', error);
       return {
         success: false,
         message: error.message || 'An unexpected error occurred during the search.',
