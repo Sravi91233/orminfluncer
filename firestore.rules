@@ -4,8 +4,6 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Admins can read and write all data.
-    // This rule is checked first. If the user is an admin, they are granted access.
-    // If not, Firestore proceeds to check the more specific rules below.
     match /{document=**} {
       allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
@@ -18,19 +16,21 @@ service cloud.firestore {
     }
 
     // Allow a client to create an OTP document for their own email.
-    // This rule is secure because the create operation is validated against
-    // the incoming data. No one can create OTPs for other people.
     match /otp/{email} {
       allow create: if request.resource.data.email == email;
-      // Deny all other operations from the client for security.
-      // The server-side verifyOtpFlow handles reading and deleting.
       allow read, update, delete: if false;
     }
 
-    // Allow any authenticated user to read the list of cities for search functionality.
-    // Admins have write access from the rule above.
-    match /Cities/{city} {
+    // Allow any authenticated user to read the list of cities.
+    match /Cities/{cityId} {
       allow read: if request.auth != null;
+    }
+
+    // Allow server-side functions (like our search flow) to read API Keys.
+    // Deny all client-side access for security.
+    match /APIKeys/{keyId} {
+      allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow write, create, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }

@@ -5,8 +5,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { suggestSearchTerms } from '@/ai/flows/suggest-search-terms';
+import { searchInfluencers } from '@/ai/flows/search-influencers-flow';
 import type { AppCity, Influencer } from '@/types';
-// import { influencers } from '@/lib/mock-data'; // No longer using mock data
 import { exportToCsv } from '@/lib/csv-export';
 
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 const searchFormSchema = z.object({
-  city: z.string().min(1, { message: "City is required." }),
+  city: z.string().optional(),
   category: z.string().optional(),
   platform: z.string().optional(),
   bio: z.string().optional(),
@@ -33,15 +33,14 @@ const searchFormSchema = z.object({
 type SortKey = keyof Influencer;
 
 const PlatformIcon = ({ platform }: { platform: Influencer['platform'] }) => {
-    switch (platform) {
-        case 'Instagram': return <Instagram className="h-4 w-4" />;
-        case 'TikTok': return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M16 8.35a4 4 0 1 0-8 0V17a4 4 0 1 0 8 0V8.35Z"></path><path d="M12 17v-4.65"></path></svg>;
-        case 'YouTube': return <Youtube className="h-4 w-4" />;
+    switch (platform?.toLowerCase()) {
+        case 'instagram': return <Instagram className="h-4 w-4" />;
+        case 'tiktok': return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M16 8.35a4 4 0 1 0-8 0V17a4 4 0 1 0 8 0V8.35Z"></path><path d="M12 17v-4.65"></path></svg>;
+        case 'youtube': return <Youtube className="h-4 w-4" />;
         default: return <Briefcase className="h-4 w-4" />;
     }
 }
 
-// In a real app, these would be fetched from a database
 const uniquePlatforms: string[] = ["Instagram", "TikTok", "YouTube"];
 
 
@@ -84,20 +83,28 @@ export function InfluencerSearchPage() {
     setIsLoading(true);
     setSuggestions([]);
     
-    // Placeholder for real API call to Firestore
-    toast({
-        title: "Search Submitted",
-        description: "This is a placeholder. In a real app, this would query a database.",
-    })
-    
-    // Simulate API call for search
-    setTimeout(() => {
-      // In a real app, you would fetch from Firestore based on the filters.
-      // For now, we will return no results.
-      setResults([]);
-      setCurrentPage(1);
-      setIsLoading(false);
-    }, 500);
+    try {
+      const response = await searchInfluencers({ ...values, currentPage });
+      if (response.success) {
+        setResults(response.results);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Search Failed',
+          description: response.message,
+        });
+        setResults([]);
+      }
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: error.message || 'An unexpected error occurred.',
+        });
+        setResults([]);
+    } finally {
+        setIsLoading(false);
+    }
   };
   
   const handleViewDetails = (influencer: Influencer) => {
@@ -124,10 +131,13 @@ export function InfluencerSearchPage() {
     let sortableItems = [...results];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
+        const aVal = a[sortConfig.key] || 0;
+        const bVal = b[sortConfig.key] || 0;
+
+        if (aVal < bVal) {
           return sortConfig.direction === 'asc' ? -1 : 1;
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
+        if (aVal > bVal) {
           return sortConfig.direction === 'asc' ? 1 : -1;
         }
         return 0;
@@ -136,7 +146,8 @@ export function InfluencerSearchPage() {
     return sortableItems;
   }, [results, sortConfig]);
 
-  const paginatedResults = sortedResults.slice((currentPage - 1) * resultsPerPage, currentPage * resultsPerPage);
+  // Client-side pagination can be removed if API supports it well
+  const paginatedResults = sortedResults;
   const totalPages = Math.ceil(results.length / resultsPerPage);
 
   const handleExport = () => {
@@ -149,6 +160,12 @@ export function InfluencerSearchPage() {
       return;
     }
     exportToCsv(results, 'influencers.csv');
+  };
+
+  const formatFollowers = (followers: number) => {
+    if (followers >= 1000000) return `${(followers / 1000000).toFixed(1)}M`;
+    if (followers >= 1000) return `${(followers / 1000).toFixed(1)}K`;
+    return followers;
   };
 
   return (
@@ -164,14 +181,15 @@ export function InfluencerSearchPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <FormField name="city" control={form.control} render={({ field }) => (
                   <FormItem>
-                    <FormLabel>City (Required)</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} required>
+                    <FormLabel>City</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select city..." />
+                          <SelectValue placeholder="Any City" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="Any City">Any City</SelectItem>
                         {availableCities.map(city => <SelectItem key={city} value={city}>{city}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -257,8 +275,8 @@ export function InfluencerSearchPage() {
                   paginatedResults.map((influencer) => (
                     <TableRow key={influencer.id} className="cursor-pointer" onClick={() => handleViewDetails(influencer)}>
                       <TableCell className="font-medium">{influencer.handle}</TableCell>
-                      <TableCell><Badge variant="outline" className="flex items-center gap-2"><PlatformIcon platform={influencer.platform} /> {influencer.platform}</Badge></TableCell>
-                      <TableCell>{(influencer.followers / 1000).toFixed(1)}k</TableCell>
+                      <TableCell><Badge variant="outline" className="flex items-center gap-2 capitalize"><PlatformIcon platform={influencer.platform} /> {influencer.platform}</Badge></TableCell>
+                      <TableCell>{formatFollowers(influencer.followers)}</TableCell>
                       <TableCell>{influencer.engagementRate.toFixed(2)}%</TableCell>
                       <TableCell className="max-w-xs truncate">{influencer.bio}</TableCell>
                       <TableCell className="text-right">
@@ -271,7 +289,7 @@ export function InfluencerSearchPage() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center">
-                      No results found. Connect to a database to search for influencers.
+                      No results found. Try adjusting your search criteria.
                     </TableCell>
                   </TableRow>
                 )}
@@ -310,11 +328,11 @@ export function InfluencerSearchPage() {
                  <div className="flex items-center gap-4">
                     <Avatar className="h-16 w-16">
                         <AvatarImage src={`https://i.pravatar.cc/150?u=${selectedInfluencer.handle}`} />
-                        <AvatarFallback>{selectedInfluencer.handle.substring(1,3).toUpperCase()}</AvatarFallback>
+                        <AvatarFallback>{selectedInfluencer.handle.substring(0,2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div>
                         <DialogTitle className="text-2xl">{selectedInfluencer.handle}</DialogTitle>
-                        <DialogDescription className="flex items-center gap-2 mt-1">
+                        <DialogDescription className="flex items-center gap-2 mt-1 capitalize">
                           <PlatformIcon platform={selectedInfluencer.platform} /> {selectedInfluencer.platform}
                         </DialogDescription>
                     </div>
@@ -326,7 +344,7 @@ export function InfluencerSearchPage() {
                     <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-primary" />
                         <div>
-                            <p className="font-semibold">{(selectedInfluencer.followers / 1000).toFixed(1)}k</p>
+                            <p className="font-semibold">{formatFollowers(selectedInfluencer.followers)}</p>
                             <p className="text-xs text-muted-foreground">Followers</p>
                         </div>
                     </div>

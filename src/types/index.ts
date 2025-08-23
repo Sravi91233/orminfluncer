@@ -14,15 +14,15 @@ export interface SignupCredentials extends LoginCredentials {
 }
 
 export interface Influencer {
-  id: number;
+  id: string | number;
   handle: string;
-  platform: 'Instagram' | 'TikTok' | 'YouTube';
+  platform: 'Instagram' | 'TikTok' | 'YouTube' | string;
   followers: number;
   engagementRate: number;
   bio: string;
   city: string;
   country?: string;
-  category: 'Fashion' | 'Fitness' | 'Food' | 'Travel' | 'Tech';
+  category: string;
 }
 
 export interface AppUser {
@@ -96,3 +96,32 @@ export const SendPasswordResetOutputSchema = z.object({
   message: z.string(),
 });
 export type SendPasswordResetOutput = z.infer<typeof SendPasswordResetOutputSchema>;
+
+// Schema for influencer search
+export const SearchInfluencersInputSchema = z.object({
+  city: z.string().optional(),
+  category: z.string().optional(),
+  platform: z.string().optional(),
+  bio: z.string().optional(),
+  currentPage: z.number().optional(),
+});
+export type SearchInfluencersInput = z.infer<typeof SearchInfluencersInputSchema>;
+
+export const InfluencerSchema = z.object({
+    id: z.union([z.string(), z.number()]),
+    handle: z.string(),
+    platform: z.string(),
+    followers: z.number(),
+    engagementRate: z.number(),
+    bio: z.string(),
+    city: z.string(),
+    country: z.string().optional(),
+    category: z.string(),
+});
+
+export const SearchInfluencersOutputSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  results: z.array(InfluencerSchema),
+});
+export type SearchInfluencersOutput = z.infer<typeof SearchInfluencersOutputSchema>;
