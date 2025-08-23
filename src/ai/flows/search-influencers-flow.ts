@@ -29,13 +29,16 @@ const searchInfluencersFlow = ai.defineFlow(
     const apiKey = 'ed81c08da2msh81f3e4df68af3ebp1c9d7ajsn929105d62758';
     
     const { city, category, platform, bio } = input;
-    const pagesToFetch = [1, 2, 3];
+    const MAX_PAGES_TO_FETCH = 5;
+
     let allResults: Influencer[] = [];
+    let currentPage = 1;
+    let pageMaximum = 1;
 
     try {
-      for (const page of pagesToFetch) {
+      while (currentPage <= pageMaximum && currentPage <= MAX_PAGES_TO_FETCH) {
         const queryParams = new URLSearchParams({
-            current_page: page.toString()
+            current_page: currentPage.toString()
         });
 
         if (city && city !== 'Any City') queryParams.append('city', city.toLowerCase());
@@ -49,7 +52,7 @@ const searchInfluencersFlow = ai.defineFlow(
         const curlCommand = `curl -X GET '${url}' \\
 -H 'x-rapidapi-key: ${apiKey.slice(0, 4)}...${apiKey.slice(-4)}' \\
 -H 'x-rapidapi-host: ylytic-influencers-api.p.rapidapi.com'`;
-        console.log(`\n[searchInfluencersFlow] EXECUTING API CALL FOR PAGE ${page}:`);
+        console.log(`\n[searchInfluencersFlow] EXECUTING API CALL FOR PAGE ${currentPage}:`);
         console.log(curlCommand, '\n');
 
         const response = await fetch(url, {
@@ -60,18 +63,23 @@ const searchInfluencersFlow = ai.defineFlow(
             },
         });
 
-        console.log(`[searchInfluencersFlow] Received API response for page ${page} with status: ${response.status}`);
+        console.log(`[searchInfluencersFlow] Received API response for page ${currentPage} with status: ${response.status}`);
         if (!response.ok) {
            const errorText = await response.text();
-           console.error(`[searchInfluencersFlow] API Error for page ${page} (${response.status}): ${errorText}`);
+           console.error(`[searchInfluencersFlow] API Error for page ${currentPage} (${response.status}): ${errorText}`);
            // Continue to next page if one fails
+           currentPage++;
            continue;
         }
 
         try {
            const data = await response.json();
-           console.log(`[searchInfluencersFlow] Successfully parsed JSON for page ${page}.`);
+           console.log(`[searchInfluencersFlow] Successfully parsed JSON for page ${currentPage}.`);
            
+           if (currentPage === 1) {
+              pageMaximum = data.page_maximum || 1;
+           }
+
            const pageResults: Influencer[] = (data.creators || []).map((creator: any) => ({
                id: creator.handle_link, // Use handle_link as a unique string ID
                handle: creator.handle,
@@ -85,17 +93,13 @@ const searchInfluencersFlow = ai.defineFlow(
            }));
 
            allResults.push(...pageResults);
-           console.log(`[searchInfluencersFlow] Page ${page} processed. Total creators so far: ${allResults.length}`);
+           console.log(`[searchInfluencersFlow] Page ${currentPage} processed. Total creators so far: ${allResults.length}`);
 
         } catch (jsonError) {
-           console.error(`[searchInfluencersFlow] Failed to parse JSON for page ${page}. Status: ${response.status}`, jsonError);
+           console.error(`[searchInfluencersFlow] Failed to parse JSON for page ${currentPage}. Status: ${response.status}`, jsonError);
         }
 
-        // Wait for 2 seconds before the next API call to avoid rate limiting or server overload.
-        if (page < pagesToFetch.length) {
-            console.log('[searchInfluencersFlow] Waiting for 2 seconds before next API call...');
-            await new Promise(resolve => setTimeout(resolve, 2000));
-        }
+        currentPage++;
       }
 
 
