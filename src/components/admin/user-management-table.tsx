@@ -6,19 +6,32 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { MoreHorizontal, UserCog, MailWarning, Trash2 } from 'lucide-react';
+import { MoreHorizontal, UserCog, MailWarning, Trash2, UserX, UserCheck } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { sendPasswordReset } from '@/ai/flows/send-password-reset-flow';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
 
 interface UserManagementTableProps {
   users: AppUser[];
   onUpdateUser: (userId: string, updates: Partial<AppUser>) => void;
+  onDeleteUser: (userId: string) => void;
 }
 
 
-export function UserManagementTable({ users, onUpdateUser }: UserManagementTableProps) {
+export function UserManagementTable({ users, onUpdateUser, onDeleteUser }: UserManagementTableProps) {
   const { toast } = useToast();
+  const [userToDelete, setUserToDelete] = React.useState<AppUser | null>(null);
 
   const handleStatusChange = (user: AppUser, newStatus: 'active' | 'disabled') => {
     onUpdateUser(user.id, { status: newStatus });
@@ -56,6 +69,17 @@ export function UserManagementTable({ users, onUpdateUser }: UserManagementTable
       });
     }
   };
+  
+  const confirmDeleteUser = () => {
+    if (userToDelete) {
+      onDeleteUser(userToDelete.id);
+      toast({
+        title: 'User Deleted',
+        description: `${userToDelete.name} has been removed.`,
+      });
+      setUserToDelete(null);
+    }
+  };
 
 
   const getInitials = (name?: string | null) => {
@@ -76,79 +100,101 @@ export function UserManagementTable({ users, onUpdateUser }: UserManagementTable
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>User</TableHead>
-            <TableHead>Subscription</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Last Login</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.map((user) => (
-            <TableRow key={user.id}>
-              <TableCell className="font-medium">
-                <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.photoURL || undefined} />
-                        <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                        <span className="font-semibold">{user.name}</span>
-                        <span className="text-sm text-muted-foreground">{user.email}</span>
-                    </div>
-                </div>
-              </TableCell>
-               <TableCell>
-                <Badge variant={user.subscription === 'Premium' ? 'default' : 'secondary'}>
-                  {user.subscription}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Badge variant={user.status === 'active' ? 'outline' : 'destructive'} 
-                  className={user.status === 'active' ? 'border-green-500 text-green-500' : ''}>
-                  {user.status}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {formatDate(user.lastLogin)}
-              </TableCell>
-              <TableCell className="text-right">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                         <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">User Actions</span>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions for {user.name}</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleRoleChange(user, user.role === 'admin' ? 'user' : 'admin')}>
-                            <UserCog className="mr-2 h-4 w-4" />
-                            <span>{user.role === 'admin' ? 'Demote to User' : 'Promote to Admin'}</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleSendResetLink(user.email)}>
-                            <MailWarning className="mr-2 h-4 w-4" />
-                            <span>Send Password Reset</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                         <DropdownMenuItem 
-                            className="text-red-500 focus:text-red-500 focus:bg-red-50"
-                            onClick={() => handleStatusChange(user, user.status === 'active' ? 'disabled' : 'active')}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            <span>{user.status === 'active' ? 'Deactivate User' : 'Activate User'}</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
+    <>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>User</TableHead>
+              <TableHead>Subscription</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Last Login</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.photoURL || undefined} />
+                          <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                          <span className="font-semibold">{user.name}</span>
+                          <span className="text-sm text-muted-foreground">{user.email}</span>
+                      </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={user.subscription === 'Premium' ? 'default' : 'secondary'}>
+                    {user.subscription}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={user.status === 'active' ? 'outline' : 'destructive'} 
+                    className={user.status === 'active' ? 'border-green-500 text-green-500' : ''}>
+                    {user.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {formatDate(user.lastLogin)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">User Actions</span>
+                          </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions for {user.name}</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleRoleChange(user, user.role === 'admin' ? 'user' : 'admin')}>
+                              <UserCog className="mr-2 h-4 w-4" />
+                              <span>{user.role === 'admin' ? 'Demote to User' : 'Promote to Admin'}</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleSendResetLink(user.email)}>
+                              <MailWarning className="mr-2 h-4 w-4" />
+                              <span>Send Password Reset</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(user, user.status === 'active' ? 'disabled' : 'active')}>
+                             {user.status === 'active' ? <UserX className="mr-2 h-4 w-4" /> : <UserCheck className="mr-2 h-4 w-4" />}
+                              <span>{user.status === 'active' ? 'Disable User' : 'Enable User'}</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                              className="text-red-500 focus:text-red-500 focus:bg-red-50"
+                              onClick={() => setUserToDelete(user)}>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              <span>Delete User</span>
+                          </DropdownMenuItem>
+                      </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <AlertDialog open={!!userToDelete} onOpenChange={(isOpen) => !isOpen && setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the user account
+              and remove their data from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteUser}>Yes, delete user</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

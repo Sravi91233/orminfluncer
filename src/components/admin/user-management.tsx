@@ -46,6 +46,14 @@ export function UserManagement() {
         user.id === userId ? { ...user, ...updates } : user
       )
     );
+    // Here you would also update the document in Firestore
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    setUsers(currentUsers =>
+      currentUsers.filter(user => user.id !== userId)
+    );
+    // Here you would also delete the document from Firestore and Firebase Auth
   };
   
   const filteredUsers = React.useMemo(() => {
@@ -84,7 +92,7 @@ export function UserManagement() {
             </div>
         </CardHeader>
         <CardContent>
-          <UserManagementTable users={filteredUsers} onUpdateUser={handleUpdateUser} />
+          <UserManagementTable users={filteredUsers} onUpdateUser={handleUpdateUser} onDeleteUser={handleDeleteUser} />
         </CardContent>
       </Card>
     </div>
