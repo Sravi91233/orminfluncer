@@ -6,7 +6,7 @@ import { z } from 'genkit';
 import { ai } from '@/ai/genkit';
 import { SendPasswordResetInputSchema, SendPasswordResetOutputSchema, SendPasswordResetInput } from '@/types';
 import { auth } from '@/lib/firebase';
-import { sendPasswordResetEmail } from 'firebase/auth';
+import { sendPasswordResetEmail as firebaseSendPasswordResetEmail } from 'firebase/auth';
 
 export async function sendPasswordReset(input: SendPasswordResetInput): Promise<z.infer<typeof SendPasswordResetOutputSchema>> {
   return sendPasswordResetFlow(input);
@@ -23,7 +23,7 @@ const sendPasswordResetFlow = ai.defineFlow(
       // This will use Firebase's built-in email sending capabilities.
       // For this to work, ensure your Firebase project is configured to send emails.
       // You might need to set up an SMTP server or a third-party email service in the Firebase console.
-      await sendPasswordResetEmail(auth, email);
+      await firebaseSendPasswordResetEmail(auth, email);
       return { success: true, message: 'Password reset email has been sent.' };
     } catch (error: any) {
       console.error('Error in sendPasswordResetFlow:', error);
