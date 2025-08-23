@@ -71,22 +71,26 @@ const searchInfluencersFlow = ai.defineFlow(
                 // Continue to next response if one fails
                 continue;
              }
-             const data = await response.json();
-             console.log(`[searchInfluencersFlow] Successfully parsed JSON response for one page.`);
-             
-             const pageResults: Influencer[] = (data.creators || []).map((creator: any) => ({
-                id: creator.handle_link, // Use handle_link as a unique string ID
-                handle: creator.handle,
-                platform: creator.connector.charAt(0).toUpperCase() + creator.connector.slice(1),
-                followers: creator.followers || 0,
-                engagementRate: creator.engagement || 0,
-                bio: creator.bio || '',
-                city: creator.city || 'N/A',
-                country: creator.country || 'N/A',
-                category: creator.category || 'N/A',
-            }));
+             try {
+                const data = await response.json();
+                console.log(`[searchInfluencersFlow] Successfully parsed JSON response for one page.`);
+                
+                const pageResults: Influencer[] = (data.creators || []).map((creator: any) => ({
+                    id: creator.handle_link, // Use handle_link as a unique string ID
+                    handle: creator.handle,
+                    platform: creator.connector.charAt(0).toUpperCase() + creator.connector.slice(1),
+                    followers: creator.followers || 0,
+                    engagementRate: creator.engagement || 0,
+                    bio: creator.bio || '',
+                    city: creator.city || 'N/A',
+                    country: creator.country || 'N/A',
+                    category: creator.category || 'N/A',
+                }));
 
-            allResults.push(...pageResults);
+                allResults.push(...pageResults);
+             } catch (jsonError) {
+                console.error(`[searchInfluencersFlow] Failed to parse JSON for a response. Status: ${response.status}`, jsonError);
+             }
         }
 
 
