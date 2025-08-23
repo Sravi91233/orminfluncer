@@ -19,7 +19,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
-import { BarChart3, LayoutDashboard, LogOut, Search, Settings, ShieldCheck, Users, Bot, UserCircle } from 'lucide-react';
+import { BarChart3, LayoutDashboard, LogOut, Search, Settings, ShieldCheck, Users, Bot, UserCircle, Star } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +45,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/profile', label: 'Profile & Settings', icon: Settings, admin: false },
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, admin: true },
     { href: '/admin/users', label: 'Users', icon: Users, admin: true },
+    { href: '/admin/influencers', label: 'Influencers', icon: Star, admin: true },
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart3, admin: true },
   ].filter(item => user?.role === 'admin' ? item.admin : !item.admin);
 
