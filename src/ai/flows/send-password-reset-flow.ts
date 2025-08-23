@@ -31,6 +31,7 @@ const sendPasswordResetFlow = ai.defineFlow(
       console.error('Error in sendPasswordResetFlow:', error);
       // To prevent user enumeration attacks, we don't reveal if the email exists or not.
       // We return a success message even if there was a known error (e.g. user not found).
+      // The detailed error will be visible in the server logs for debugging.
       return { success: true, message: 'If an account with this email exists, a password reset link has been sent.' };
     }
   }

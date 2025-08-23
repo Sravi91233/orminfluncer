@@ -10,10 +10,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, Terminal } from 'lucide-react';
 import { sendPasswordReset } from '@/ai/flows/send-password-reset-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal } from 'lucide-react';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -62,11 +61,11 @@ export function ForgotPasswordForm() {
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-             <Alert>
+             <Alert variant="destructive">
               <Terminal className="h-4 w-4" />
-              <AlertTitle>Note on Email Delivery</AlertTitle>
+              <AlertTitle>Not Receiving Emails?</AlertTitle>
               <AlertDescription>
-                If you do not receive an email within a few minutes, please check your spam folder. Email delivery is handled by Firebase and may depend on your project's configuration in the Firebase Console.
+                If you are using Gmail and have 2-Factor Authentication enabled, you must use a Google <b>App Password</b> in your Firebase SMTP configuration, not your regular password.
               </AlertDescription>
             </Alert>
             <Button asChild className="w-full">
