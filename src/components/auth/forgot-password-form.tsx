@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { LoaderCircle } from 'lucide-react';
 import { sendPasswordReset } from '@/ai/flows/send-password-reset-flow';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Terminal } from 'lucide-react';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -33,7 +35,6 @@ export function ForgotPasswordForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      // We now call our Genkit flow which wraps the Firebase SDK call.
       const result = await sendPasswordReset(values);
       if (result.success) {
         setIsSubmitted(true);
@@ -60,7 +61,14 @@ export function ForgotPasswordForm() {
                 A password reset link has been sent to the email address you provided, if it exists in our system.
             </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+             <Alert>
+              <Terminal className="h-4 w-4" />
+              <AlertTitle>Note on Email Delivery</AlertTitle>
+              <AlertDescription>
+                If you do not receive an email within a few minutes, please check your spam folder. Email delivery is handled by Firebase and may depend on your project's configuration in the Firebase Console.
+              </AlertDescription>
+            </Alert>
             <Button asChild className="w-full">
                 <Link href="/login">Return to Sign In</Link>
             </Button>

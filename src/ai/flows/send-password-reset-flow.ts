@@ -22,13 +22,14 @@ const sendPasswordResetFlow = ai.defineFlow(
     try {
       // This will use Firebase's built-in email sending capabilities.
       // For this to work, ensure your Firebase project is configured to send emails.
-      // You might need to set up an SMTP server or a third-party email service in the Firebase console.
+      // This may require configuring email templates or an SMTP server in the Firebase Console.
       await firebaseSendPasswordResetEmail(auth, email);
+      console.log(`Password reset email requested for: ${email}. Firebase is handling the delivery.`);
       return { success: true, message: 'Password reset email has been sent.' };
     } catch (error: any) {
       console.error('Error in sendPasswordResetFlow:', error);
       // To prevent user enumeration attacks, we don't reveal if the email exists or not.
-      // We return a success message even if the user is not found.
+      // We return a success message even if the user is not found, which is standard security practice.
       if (error.code === 'auth/user-not-found') {
         console.log(`Password reset attempted for non-existent user: ${email}`);
         return { success: true, message: 'Password reset email has been sent.' };
