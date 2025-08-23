@@ -37,6 +37,13 @@ export interface AppUser {
   photoURL?: string | null;
 }
 
+export interface AppCity {
+  id: string;
+  name: string;
+  state: string;
+}
+
+
 export interface AnalyticsData {
   totalUsers: number;
   totalSearches: number;

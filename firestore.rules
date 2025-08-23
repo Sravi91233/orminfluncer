@@ -2,12 +2,14 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Admins can read and write all data.
-    // This rule is checked first. If the user is an admin, they are granted access.
-    // If not, Firestore proceeds to check the more specific rules below.
+    // Admin full access
     match /{document=**} {
       allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // By default, deny all reads and writes unless explicitly allowed
+    match /{document=**} {
+      allow read, write: if false;
     }
 
     // Allow users to read and update their own profile.
@@ -15,6 +17,11 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, update: if request.auth != null && request.auth.uid == userId;
       allow create: if request.auth != null;
+    }
+    
+    // Allow admins to manage cities
+    match /Cities/{cityId} {
+      allow read, write, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     // Allow a client to create an OTP document for their own email.
