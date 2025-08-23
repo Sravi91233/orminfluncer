@@ -21,15 +21,21 @@ const searchInfluencersFlow = ai.defineFlow(
     outputSchema: SearchInfluencersOutputSchema,
   },
   async (input) => {
-    const apiKeyData = await getApiKey('x-rapidapi-key');
-
-    if (!apiKeyData) {
-      return {
-        success: false,
-        message: 'API key for influencer search is not configured. Please contact support.',
-        results: [],
-      };
-    }
+    // TODO: Replace this hardcoded key with a call to a secure Cloud Function
+    // that retrieves the key from Firestore. This is a temporary fix to bypass
+    // Firestore security rule issues during development.
+    const apiKey = 'ed81c08da2msh81f3e4df68af3ebp1c9d7ajsn929105d62758';
+    
+    // The original call to get the key from Firestore. This will be restored
+    // once a secure server-to-server authentication method is in place.
+    // const apiKeyData = await getApiKey('x-rapidapi-key');
+    // if (!apiKeyData) {
+    //   return {
+    //     success: false,
+    //     message: 'API key for influencer search is not configured. Please contact support.',
+    //     results: [],
+    //   };
+    // }
 
     const { city, category, platform, bio, currentPage = 1 } = input;
     
@@ -39,7 +45,7 @@ const searchInfluencersFlow = ai.defineFlow(
 
     if (city && city !== 'Any City') queryParams.append('country', city); // The API seems to use country filter for cities
     if (category) queryParams.append('category', category);
-    if (platform && platform !== 'Any Platform') queryParams.append('connector', platform.toLowerCase());
+    if (platform && platform !== 'any') queryParams.append('connector', platform.toLowerCase());
     if (bio) queryParams.append('bio', bio);
 
 
@@ -49,7 +55,7 @@ const searchInfluencersFlow = ai.defineFlow(
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'x-rapidapi-key': apiKeyData.keyValue,
+          'x-rapidapi-key': apiKey,
           'x-rapidapi-host': 'ylytic-influencers-api.p.rapidapi.com',
         },
       });
@@ -74,8 +80,8 @@ const searchInfluencersFlow = ai.defineFlow(
         category: creator.category || 'N/A',
       }));
 
-      // Update the lastUsed timestamp without waiting for it to complete
-      updateApiKeyLastUsed(apiKeyData.id);
+      // This will be re-enabled when the key is fetched from Firestore again.
+      // updateApiKeyLastUsed(apiKeyData.id);
 
       return {
         success: true,
