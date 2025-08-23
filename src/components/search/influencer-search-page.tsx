@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { suggestSearchTerms } from '@/ai/flows/suggest-search-terms';
 import type { Influencer } from '@/types';
-import { influencers } from '@/lib/mock-data';
+// import { influencers } from '@/lib/mock-data'; // No longer using mock data
 import { exportToCsv } from '@/lib/csv-export';
 
 import { Button } from '@/components/ui/button';
@@ -39,8 +39,9 @@ const PlatformIcon = ({ platform }: { platform: Influencer['platform'] }) => {
     }
 }
 
-const uniqueCities = [...new Set(influencers.map(i => i.city))].sort();
-const uniquePlatforms = [...new Set(influencers.map(i => i.platform))].sort();
+// In a real app, these would be fetched from a database
+const uniqueCities: string[] = ["New York", "Los Angeles", "Chicago", "London", "San Francisco", "Paris", "Miami", "Toronto", "Bangkok", "Austin", "Tokyo", "Boston"];
+const uniquePlatforms: string[] = ["Instagram", "TikTok", "YouTube"];
 
 
 export function InfluencerSearchPage() {
@@ -65,26 +66,18 @@ export function InfluencerSearchPage() {
   const handleSearch = async (values: z.infer<typeof searchFormSchema>) => {
     setIsLoading(true);
     setSuggestions([]);
-
+    
+    // Placeholder for real API call to Firestore
+    toast({
+        title: "Search Submitted",
+        description: "This is a placeholder. In a real app, this would query a database.",
+    })
+    
     // Simulate API call for search
     setTimeout(() => {
-      let filtered = influencers;
-      if (values.city) {
-        filtered = filtered.filter((i) => i.city === values.city);
-      }
-      if (values.platform && values.platform !== 'Any Platform') {
-        filtered = filtered.filter((i) => i.platform === values.platform);
-      }
-      if (values.category) {
-        filtered = filtered.filter((i) => i.category.toLowerCase().includes(values.category!.toLowerCase()));
-      }
-      if (values.bio) {
-        const terms = values.bio.toLowerCase().split(' ');
-        filtered = filtered.filter((i) => terms.every(term => 
-          i.bio.toLowerCase().includes(term)
-        ));
-      }
-      setResults(filtered);
+      // In a real app, you would fetch from Firestore based on the filters.
+      // For now, we will return no results.
+      setResults([]);
       setCurrentPage(1);
       setIsLoading(false);
     }, 500);
@@ -261,7 +254,7 @@ export function InfluencerSearchPage() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center">
-                      No results found. Try a different search.
+                      No results found. Connect to a database to search for influencers.
                     </TableCell>
                   </TableRow>
                 )}

@@ -4,10 +4,36 @@ import { AppLayout } from '@/components/layout/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Users, Database, Search, CreditCard } from 'lucide-react';
-import { analytics, influencers, users } from '@/lib/mock-data';
+import { useEffect, useState } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function AdminDashboardPage() {
-  const activeSubscriptions = users.filter(u => u.status === 'active').length;
+  const [userCount, setUserCount] = useState(0);
+  const [premiumCount, setPremiumCount] = useState(0);
+  const [freeCount, setFreeCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const usersCollection = collection(db, 'users');
+      const userSnapshot = await getDocs(usersCollection);
+      let premium = 0;
+      let free = 0;
+      userSnapshot.docs.forEach(doc => {
+        const user = doc.data();
+        if (user.subscription === 'Premium') {
+          premium++;
+        } else {
+          free++;
+        }
+      });
+      setUserCount(userSnapshot.size);
+      setPremiumCount(premium);
+      setFreeCount(free);
+    };
+    fetchUsers();
+  }, []);
+
 
   return (
     <ProtectedRoute roles={['admin']}>
@@ -21,8 +47,8 @@ export default function AdminDashboardPage() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{analytics.totalUsers}</div>
-                <p className="text-xs text-muted-foreground">140 Free | 12 Premium</p>
+                <div className="text-2xl font-bold">{userCount}</div>
+                <p className="text-xs text-muted-foreground">{freeCount} Free | {premiumCount} Premium</p>
               </CardContent>
             </Card>
             <Card>
@@ -31,8 +57,8 @@ export default function AdminDashboardPage() {
                 <Database className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{influencers.length}</div>
-                <p className="text-xs text-muted-foreground">in database</p>
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground">from database</p>
               </CardContent>
             </Card>
             <Card>
@@ -41,8 +67,8 @@ export default function AdminDashboardPage() {
                 <Search className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{analytics.totalSearches}</div>
-                <p className="text-xs text-muted-foreground">+201 since last week</p>
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground">coming soon</p>
               </CardContent>
             </Card>
             <Card>
@@ -51,8 +77,8 @@ export default function AdminDashboardPage() {
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{activeSubscriptions}</div>
-                <p className="text-xs text-muted-foreground">Represents active users</p>
+                <div className="text-2xl font-bold">{premiumCount}</div>
+                <p className="text-xs text-muted-foreground">Represents active premium users</p>
               </CardContent>
             </Card>
           </div>

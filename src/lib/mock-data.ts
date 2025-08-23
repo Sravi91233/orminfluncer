@@ -1,38 +1,15 @@
 import type { Influencer, AppUser, AnalyticsData } from '@/types';
 
-export const influencers: Influencer[] = [
-  { id: 1, handle: '@stylemaven', platform: 'Instagram', followers: 150000, engagementRate: 3.5, bio: 'Fashion enthusiast & daily outfits.', city: 'New York', country: 'USA', category: 'Fashion' },
-  { id: 2, handle: '@fitlifejess', platform: 'TikTok', followers: 500000, engagementRate: 12.1, bio: 'Fitness tips and workout routines.', city: 'Los Angeles', country: 'USA', category: 'Fitness' },
-  { id: 3, handle: '@foodieadventures', platform: 'YouTube', followers: 75000, engagementRate: 5.2, bio: 'Exploring the best eats in town.', city: 'Chicago', country: 'USA', category: 'Food' },
-  { id: 4, handle: '@wanderlust_lisa', platform: 'Instagram', followers: 220000, engagementRate: 4.1, bio: 'Traveling the world one photo at a time.', city: 'London', country: 'UK', category: 'Travel' },
-  { id: 5, handle: '@tech_guru', platform: 'YouTube', followers: 1200000, engagementRate: 7.8, bio: 'Unboxing the latest gadgets.', city: 'San Francisco', country: 'USA', category: 'Tech' },
-  { id: 6, handle: '@citystyle', platform: 'Instagram', followers: 85000, engagementRate: 2.8, bio: 'Urban fashion inspiration from Paris.', city: 'Paris', country: 'France', category: 'Fashion' },
-  { id: 7, handle: '@yogabunny', platform: 'Instagram', followers: 300000, engagementRate: 6.2, bio: 'Daily yoga flows and mindfulness.', city: 'Miami', country: 'USA', category: 'Fitness' },
-  { id: 8, handle: '@kitchenhacks', platform: 'TikTok', followers: 1200000, engagementRate: 15.3, bio: 'Simple recipes for busy people.', city: 'Toronto', country: 'Canada', category: 'Food' },
-  { id: 9, handle: '@globetrotter_dave', platform: 'YouTube', followers: 95000, engagementRate: 4.5, bio: 'Backpacking across Southeast Asia.', city: 'Bangkok', country: 'Thailand', category: 'Travel' },
-  { id: 10, handle: '@gadgetgirl', platform: 'TikTok', followers: 800000, engagementRate: 10.5, bio: 'Cool tech you didnt know you needed.', city: 'Austin', country: 'USA', category: 'Tech' },
-  { id: 11, handle: '@tokyotrends', platform: 'Instagram', followers: 180000, engagementRate: 5.5, bio: 'Street style from the heart of Tokyo.', city: 'Tokyo', country: 'Japan', category: 'Fashion' },
-  { id: 12, handle: '@marathonman', platform: 'Instagram', followers: 55000, engagementRate: 8.1, bio: 'Training for my next marathon.', city: 'Boston', country: 'USA', category: 'Fitness' },
-  { id: 13, handle: '@sweettooth', platform: 'TikTok', followers: 250000, engagementRate: 11.2, bio: 'Baking the most decadent desserts.', city: 'New York', country: 'USA', category: 'Food' },
-];
+// This file is now deprecated for runtime data. 
+// It can be used for type references or placeholder structures.
 
-export const users: AppUser[] = [
-  { id: 'user1', name: 'Admin User', email: 'admin@example.com', role: 'admin', status: 'active', subscription: 'Premium', lastLogin: '2024-07-29T10:00:00Z', createdAt: new Date() },
-  { id: 'user2', name: 'Alice Johnson', email: 'alice@example.com', role: 'user', status: 'active', subscription: 'Premium', lastLogin: '2024-07-28T12:30:00Z', createdAt: new Date() },
-  { id: 'user3', name: 'Bob Williams', email: 'bob@example.com', role: 'user', status: 'disabled', subscription: 'Free', lastLogin: '2024-07-25T08:00:00Z', createdAt: new Date() },
-  { id: 'user4', name: 'Charlie Brown', email: 'charlie@example.com', role: 'user', status: 'active', subscription: 'Free', lastLogin: '2024-07-29T11:45:00Z', createdAt: new Date() },
-  { id: 'user5', name: 'Diana Miller', email: 'diana@example.com', role: 'user', status: 'active', subscription: 'Premium', lastLogin: '2024-07-27T18:20:00Z', createdAt: new Date() },
-];
+export const influencers: Influencer[] = [];
+
+export const users: AppUser[] = [];
 
 
 export const analytics: AnalyticsData = {
-  totalUsers: 152,
-  totalSearches: 4321,
-  categoryDistribution: [
-    { name: 'Fashion', value: 1234 },
-    { name: 'Food', value: 987 },
-    { name: 'Fitness', value: 876 },
-    { name: 'Travel', value: 765 },
-    { name: 'Tech', value: 459 },
-  ],
+  totalUsers: 0,
+  totalSearches: 0,
+  categoryDistribution: [],
 };
