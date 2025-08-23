@@ -2,19 +2,20 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only be created, read, updated, or deleted by admins or the users themselves.
-    match /users/{userId} {
-      allow read, update: if request.auth != null && (request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
-      allow create: if request.auth != null;
-      allow delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    // Helper function to check if the requesting user is an admin.
+    // It reads the user's role from their document in the 'users' collection.
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // OTP documents can only be created by an authenticated user session.
-    // The document ID must be the user's email.
-    // Client-side reads, updates, and deletes are forbidden.
-    match /otp/{email} {
-      allow create: if request.auth != null && request.resource.data.email == email;
-      allow read, update, delete: if false;
+    // Allow admins to read and write any document in any collection.
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    // Allow non-admin users to read their own user document.
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
