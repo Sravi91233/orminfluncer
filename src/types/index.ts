@@ -43,6 +43,14 @@ export interface AppCity {
   state: string;
 }
 
+export interface ApiKey {
+  id: string;
+  serviceName: string;
+  keyValue: string;
+  status: 'active' | 'expired';
+  lastUsed: FieldValue;
+}
+
 
 export interface AnalyticsData {
   totalUsers: number;
