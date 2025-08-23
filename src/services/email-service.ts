@@ -33,27 +33,3 @@ export async function sendOtpEmail({ to, otp }: SendOtpEmailParams) {
     throw new Error("Could not send verification email.");
   }
 }
-
-interface SendPasswordResetEmailParams {
-  to: string;
-  resetLink: string;
-}
-
-export async function sendPasswordResetEmail({ to, resetLink }: SendPasswordResetEmailParams) {
-  const mailOptions = {
-    from: `"Influencer Finder" <${process.env.SMTP_EMAIL}>`,
-    to,
-    subject: 'Your Password Reset Request',
-    text: `You requested a password reset. Please go to the following link to reset your password: ${resetLink}`,
-    html: `<p>You requested a password reset. Please click the link below to reset your password:</p><a href="${resetLink}">Reset Password</a>`,
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Password reset email sent: %s', info.messageId);
-    return info;
-  } catch (error) {
-    console.error("Error sending password reset email:", error);
-    throw new Error("Could not send password reset email.");
-  }
-}
