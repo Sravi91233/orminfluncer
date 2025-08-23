@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserManagementTable } from './user-management-table';
@@ -49,11 +49,27 @@ export function UserManagement() {
     // Here you would also update the document in Firestore
   };
 
-  const handleDeleteUser = (userId: string) => {
-    setUsers(currentUsers =>
-      currentUsers.filter(user => user.id !== userId)
-    );
-    // Here you would also delete the document from Firestore and Firebase Auth
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      const userRef = doc(db, 'users', userId);
+      await deleteDoc(userRef);
+      setUsers(currentUsers =>
+        currentUsers.filter(user => user.id !== userId)
+      );
+      toast({
+        title: 'User Deleted',
+        description: 'The user has been successfully removed from the database.',
+      })
+      // In a full implementation, you would also need a Cloud Function
+      // to delete the user from Firebase Authentication.
+    } catch (error) {
+      console.error("Error deleting user: ", error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete user.'
+      })
+    }
   };
   
   const filteredUsers = React.useMemo(() => {
