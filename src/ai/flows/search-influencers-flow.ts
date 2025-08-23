@@ -4,7 +4,6 @@
  * @fileOverview An AI agent that searches for influencers using an external API.
  */
 import { ai } from '@/ai/genkit';
-import { getApiKey, updateApiKeyLastUsed } from '@/services/api-key-service';
 import { SearchInfluencersInputSchema, SearchInfluencersOutputSchema, Influencer } from '@/types';
 import { z } from 'zod';
 
@@ -23,21 +22,11 @@ const searchInfluencersFlow = ai.defineFlow(
   async (input) => {
     console.log('[searchInfluencersFlow] Flow started with input:', input);
 
-    // TODO: Replace this hardcoded key with a call to a secure Cloud Function
-    // that retrieves the key from Firestore. This is a temporary fix to bypass
-    // Firestore security rule issues during development.
     const apiKey = 'ed81c08da2msh81f3e4df68af3ebp1c9d7ajsn929105d62758';
     
-    const { city, category, platform, bio } = input;
-    const MAX_PAGES_TO_FETCH = 5; // Safety limit
-
-    let allResults: Influencer[] = [];
-    let currentPage = 1;
-    let pageMaximum = 1; // Start with 1 to ensure the loop runs at least once
-
+    const { city, category, platform, bio, currentPage = 1 } = input;
+    
     try {
-      // Loop until we've fetched all pages or hit our safety limit
-      while (currentPage <= pageMaximum && currentPage <= MAX_PAGES_TO_FETCH) {
         const queryParams = new URLSearchParams({
             current_page: currentPage.toString()
         });
@@ -49,79 +38,61 @@ const searchInfluencersFlow = ai.defineFlow(
 
         const url = `https://ylytic-influencers-api.p.rapidapi.com/ylytic/admin/api/v1/discovery?${queryParams.toString()}`;
 
-        // Construct and log the curl command for each page
         const curlCommand = `curl -X GET '${url}' \\
 -H 'x-rapidapi-key: ${apiKey.slice(0, 4)}...${apiKey.slice(-4)}' \\
 -H 'x-rapidapi-host: ylytic-influencers-api.p.rapidapi.com'`;
         console.log(`\n[searchInfluencersFlow] EXECUTING API CALL FOR PAGE ${currentPage}:`);
         console.log(curlCommand, '\n');
 
-        // This try/catch is inside the loop to handle failures for a single page
-        try {
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'x-rapidapi-key': apiKey,
-                    'x-rapidapi-host': 'ylytic-influencers-api.p.rapidapi.com',
-                },
-            });
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'x-rapidapi-key': apiKey,
+                'x-rapidapi-host': 'ylytic-influencers-api.p.rapidapi.com',
+            },
+        });
 
-            console.log(`[searchInfluencersFlow] Received API response for page ${currentPage} with status: ${response.status}`);
-            if (!response.ok) {
-               const errorText = await response.text();
-               console.error(`[searchInfluencersFlow] API Error for page ${currentPage} (${response.status}): ${errorText}`);
-               // This allows the loop to continue even if one page fails
-               currentPage++;
-               continue;
-            }
-
-           const data = await response.json();
-           console.log(`[searchInfluencersFlow] Successfully parsed JSON for page ${currentPage}.`);
-           
-           // On the first page, learn how many total pages are available.
-           if (currentPage === 1) {
-              pageMaximum = data.page_maximum || 1;
-           }
-
-           const pageResults: Influencer[] = (data.creators || []).map((creator: any) => ({
-               id: creator.handle_link, // Use handle_link as a unique string ID
-               handle: creator.handle,
-               platform: creator.connector.charAt(0).toUpperCase() + creator.connector.slice(1),
-               followers: creator.followers || 0,
-               engagementRate: creator.engagement || 0,
-               bio: creator.bio || '',
-               city: creator.city || 'N/A',
-               country: creator.country || 'N/A',
-               category: creator.category || 'N/A',
-           }));
-
-           allResults.push(...pageResults);
-           console.log(`[searchInfluencersFlow] Page ${currentPage} processed. Total creators so far: ${allResults.length}`);
-
-        } catch (pageError) {
-           // Catch errors for a single page fetch (e.g., network error)
-           console.error(`[searchInfluencersFlow] Failed to fetch or process page ${currentPage}.`, pageError);
+        console.log(`[searchInfluencersFlow] Received API response for page ${currentPage} with status: ${response.status}`);
+        if (!response.ok) {
+           const errorText = await response.text();
+           console.error(`[searchInfluencersFlow] API Error for page ${currentPage} (${response.status}): ${errorText}`);
+           throw new Error(`API request failed with status ${response.status}`);
         }
 
-        // Move to the next page for the next iteration
-        currentPage++;
-      }
+       const data = await response.json();
+       console.log(`[searchInfluencersFlow] Successfully parsed JSON for page ${currentPage}.`);
+       
+       const pageMaximum = data.page_maximum || 1;
 
-
-      console.log(`[searchInfluencersFlow] All API fetches complete. Total creators found: ${allResults.length}`);
+       const pageResults: Influencer[] = (data.creators || []).map((creator: any) => ({
+           id: creator.handle_link,
+           handle: creator.handle,
+           platform: creator.connector.charAt(0).toUpperCase() + creator.connector.slice(1),
+           followers: creator.followers || 0,
+           engagementRate: creator.engagement || 0,
+           bio: creator.bio || '',
+           city: creator.city || 'N/A',
+           country: creator.country || 'N/A',
+           category: creator.category || 'N/A',
+       }));
+       
+       console.log(`[searchInfluencersFlow] Page ${currentPage} processed. Found ${pageResults.length} creators.`);
 
       return {
         success: true,
         message: 'Search successful.',
-        results: allResults,
+        results: pageResults,
+        totalPages: pageMaximum,
+        currentPage: currentPage,
       };
     } catch (error: any) {
-      // This outer catch handles errors outside the loop (e.g., initial setup issues)
       console.error('[searchInfluencersFlow] A critical error occurred in the flow:', error);
       return {
         success: false,
         message: error.message || 'An unexpected error occurred during the search.',
         results: [],
+        totalPages: 0,
+        currentPage: currentPage,
       };
     }
   }

@@ -123,5 +123,7 @@ export const SearchInfluencersOutputSchema = z.object({
   success: z.boolean(),
   message: z.string(),
   results: z.array(InfluencerSchema),
+  totalPages: z.number(),
+  currentPage: z.number(),
 });
 export type SearchInfluencersOutput = z.infer<typeof SearchInfluencersOutputSchema>;

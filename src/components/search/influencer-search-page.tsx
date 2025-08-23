@@ -52,9 +52,13 @@ export function InfluencerSearchPage() {
   const { toast } = useToast();
 
   const [availableCities, setAvailableCities] = React.useState<string[]>([]);
+  
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [totalPages, setTotalPages] = React.useState(0);
+  const [isSearching, setIsSearching] = React.useState(false);
+  const [isLoadingMore, setIsLoadingMore] = React.useState(false);
+
   const [sortConfig, setSortConfig] = React.useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>(null);
-  const resultsPerPage = 10;
   
   const [selectedInfluencer, setSelectedInfluencer] = React.useState<Influencer | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -79,11 +83,15 @@ export function InfluencerSearchPage() {
     fetchCities();
   }, [toast]);
   
-  const handleSearch = async (values: z.infer<typeof searchFormSchema>) => {
-    setIsLoading(true);
-    setSuggestions([]);
-
-    const searchParams = { ...values, currentPage };
+  const handleSearch = async (values: z.infer<typeof searchFormSchema>, page = 1) => {
+    if (page === 1) {
+      setIsSearching(true);
+      setResults([]); // Clear previous results on a new search
+    } else {
+      setIsLoadingMore(true);
+    }
+    
+    const searchParams = { ...values, currentPage: page };
     if (searchParams.platform === 'any') {
       searchParams.platform = '';
     }
@@ -91,7 +99,9 @@ export function InfluencerSearchPage() {
     try {
       const response = await searchInfluencers(searchParams);
       if (response.success) {
-        setResults(response.results);
+        setResults(prev => page === 1 ? response.results : [...prev, ...response.results]);
+        setCurrentPage(response.currentPage);
+        setTotalPages(response.totalPages);
       } else {
         toast({
           variant: 'destructive',
@@ -108,7 +118,14 @@ export function InfluencerSearchPage() {
         });
         setResults([]);
     } finally {
-        setIsLoading(false);
+        setIsSearching(false);
+        setIsLoadingMore(false);
+    }
+  };
+
+  const loadMoreResults = () => {
+    if (currentPage < totalPages) {
+      handleSearch(form.getValues(), currentPage + 1);
     }
   };
   
@@ -130,6 +147,7 @@ export function InfluencerSearchPage() {
     setResults([]);
     setSuggestions([]);
     setCurrentPage(1);
+    setTotalPages(0);
   }
 
   const sortedResults = React.useMemo(() => {
@@ -150,10 +168,6 @@ export function InfluencerSearchPage() {
     }
     return sortableItems;
   }, [results, sortConfig]);
-
-  // Client-side pagination can be removed if API supports it well
-  const paginatedResults = sortedResults;
-  const totalPages = Math.ceil(results.length / resultsPerPage);
 
   const handleExport = () => {
     if (results.length === 0) {
@@ -182,7 +196,7 @@ export function InfluencerSearchPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSearch)} className="space-y-4">
+            <form onSubmit={form.handleSubmit((values) => handleSearch(values, 1))} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <FormField name="city" control={form.control} render={({ field }) => (
                   <FormItem>
@@ -235,8 +249,8 @@ export function InfluencerSearchPage() {
               </div>
               <div className="flex justify-end gap-2">
                  <Button type="button" variant="outline" onClick={handleReset}>Reset</Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4"/>}
+                <Button type="submit" disabled={isSearching}>
+                  {isSearching ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4"/>}
                   Search
                 </Button>
               </div>
@@ -270,14 +284,14 @@ export function InfluencerSearchPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
+                {isSearching ? (
                   <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center">
                       <LoaderCircle className="mx-auto h-6 w-6 animate-spin text-primary" />
                     </TableCell>
                   </TableRow>
-                ) : paginatedResults.length > 0 ? (
-                  paginatedResults.map((influencer) => (
+                ) : sortedResults.length > 0 ? (
+                  sortedResults.map((influencer) => (
                     <TableRow key={influencer.id} className="cursor-pointer" onClick={() => handleViewDetails(influencer)}>
                       <TableCell className="font-medium">{influencer.handle}</TableCell>
                       <TableCell><Badge variant="outline" className="flex items-center gap-2 capitalize"><PlatformIcon platform={influencer.platform} /> {influencer.platform}</Badge></TableCell>
@@ -301,24 +315,15 @@ export function InfluencerSearchPage() {
               </TableBody>
             </Table>
           </div>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-end space-x-2 py-4">
+          {currentPage < totalPages && (
+            <div className="flex items-center justify-center pt-4">
               <Button
                 variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
+                onClick={loadMoreResults}
+                disabled={isLoadingMore}
               >
-                Previous
-              </Button>
-              <span className="text-sm">Page {currentPage} of {totalPages}</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-              >
-                Next
+                {isLoadingMore && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                Load More Results
               </Button>
             </div>
           )}
