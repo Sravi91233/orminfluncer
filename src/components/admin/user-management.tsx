@@ -1,0 +1,59 @@
+'use client';
+
+import * as React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { UserManagementTable } from './user-management-table';
+import { users as mockUsers } from '@/lib/mock-data';
+import type { AppUser } from '@/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Label } from '../ui/label';
+
+export function UserManagement() {
+  const [users, setUsers] = React.useState<AppUser[]>(mockUsers);
+  const [subscriptionFilter, setSubscriptionFilter] = React.useState('All');
+  
+  const handleUpdateUser = (userId: string, updates: Partial<AppUser>) => {
+    setUsers(currentUsers =>
+      currentUsers.map(user =>
+        user.id === userId ? { ...user, ...updates } : user
+      )
+    );
+  };
+  
+  const filteredUsers = React.useMemo(() => {
+    if (subscriptionFilter === 'All') {
+      return users;
+    }
+    return users.filter(user => user.subscription === subscriptionFilter);
+  }, [users, subscriptionFilter]);
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">User Management</h1>
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+            <div>
+                <CardTitle>All Users</CardTitle>
+                <CardDescription>View and manage user accounts.</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+                <Label htmlFor="subscription-filter">Filter by plan:</Label>
+                <Select value={subscriptionFilter} onValueChange={setSubscriptionFilter}>
+                    <SelectTrigger id="subscription-filter" className="w-[180px]">
+                        <SelectValue placeholder="Filter by plan..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="All">All Plans</SelectItem>
+                        <SelectItem value="Premium">Premium</SelectItem>
+                        <SelectItem value="Free">Free</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </CardHeader>
+        <CardContent>
+          <UserManagementTable users={filteredUsers} onUpdateUser={handleUpdateUser} />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

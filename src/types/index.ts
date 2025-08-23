@@ -31,6 +31,8 @@ export interface AppUser {
   name: string | null;
   role: 'admin' | 'user';
   status?: 'active' | 'disabled';
+  subscription?: 'Free' | 'Premium';
+  lastLogin?: string;
   createdAt: FieldValue;
   photoURL?: string | null;
 }

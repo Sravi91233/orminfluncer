@@ -17,11 +17,13 @@ export const influencers: Influencer[] = [
 ];
 
 export const users: AppUser[] = [
-  { id: 'user1', email: 'admin@example.com', role: 'admin', status: 'active' },
-  { id: 'user2', email: 'user1@example.com', role: 'user', status: 'active' },
-  { id: 'user3', email: 'user2@example.com', role: 'user', status: 'disabled' },
-  { id: 'user4', email: 'user3@example.com', role: 'user', status: 'active' },
+  { id: 'user1', name: 'Admin User', email: 'admin@example.com', role: 'admin', status: 'active', subscription: 'Premium', lastLogin: '2024-07-29T10:00:00Z', createdAt: new Date() },
+  { id: 'user2', name: 'Alice Johnson', email: 'alice@example.com', role: 'user', status: 'active', subscription: 'Premium', lastLogin: '2024-07-28T12:30:00Z', createdAt: new Date() },
+  { id: 'user3', name: 'Bob Williams', email: 'bob@example.com', role: 'user', status: 'disabled', subscription: 'Free', lastLogin: '2024-07-25T08:00:00Z', createdAt: new Date() },
+  { id: 'user4', name: 'Charlie Brown', email: 'charlie@example.com', role: 'user', status: 'active', subscription: 'Free', lastLogin: '2024-07-29T11:45:00Z', createdAt: new Date() },
+  { id: 'user5', name: 'Diana Miller', email: 'diana@example.com', role: 'user', status: 'active', subscription: 'Premium', lastLogin: '2024-07-27T18:20:00Z', createdAt: new Date() },
 ];
+
 
 export const analytics: AnalyticsData = {
   totalUsers: 152,
