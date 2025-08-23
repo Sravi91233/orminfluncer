@@ -6,10 +6,11 @@
  */
 import { z } from 'genkit';
 import { ai } from '@/ai/genkit';
-import { getAdminDb } from '@/lib/firebase-admin';
 import { sendOtpEmail } from '@/services/email-service';
 import { SendOtpInputSchema, SendOtpOutputSchema } from '@/types';
 
+// This flow is now only responsible for sending the email.
+// The database write is handled on the client.
 export async function sendOtp(input: z.infer<typeof SendOtpInputSchema>): Promise<z.infer<typeof SendOtpOutputSchema>> {
   return sendOtpFlow(input);
 }
@@ -20,26 +21,16 @@ const sendOtpFlow = ai.defineFlow(
     inputSchema: SendOtpInputSchema,
     outputSchema: SendOtpOutputSchema,
   },
-  async ({ email }) => {
-    const db = getAdminDb();
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
-
+  async ({ email, otp }) => {
+    if (!otp) {
+        return { success: false, message: 'OTP is required.' };
+    }
     try {
-      // Store OTP in the top-level 'otp' collection
-      await db.collection('otp').doc(email).set({
-        email,
-        otp,
-        expiresAt,
-      });
-
       // Send the OTP via email
       await sendOtpEmail({ to: email, otp });
-
       return { success: true, message: 'OTP has been sent to your email.' };
     } catch (error: any) {
       console.error('Error in sendOtpFlow:', error);
-      // In a real app, you'd want more specific error handling
       return { success: false, message: error.message || 'Failed to send OTP.' };
     }
   }

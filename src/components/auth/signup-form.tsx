@@ -15,6 +15,9 @@ import { useState } from 'react';
 import { LoaderCircle } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { sendOtp } from '@/ai/flows/send-otp-flow';
+import { db } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {...props}>
@@ -67,12 +70,12 @@ export function SignupForm() {
 
   async function handleSendOtp() {
     // Trigger validation for email field before sending OTP
-    const isEmailValid = await form.trigger('email');
+    const isEmailValid = await form.trigger(['email', 'password']);
     if (!isEmailValid) {
       toast({
         variant: 'destructive',
-        title: 'Invalid Email',
-        description: 'Please enter a valid email address to receive the verification code.',
+        title: 'Invalid Input',
+        description: 'Please enter a valid email and password (min 8 characters).',
       });
       return;
     }
@@ -80,7 +83,18 @@ export function SignupForm() {
     setIsLoading(true);
     try {
       const email = form.getValues('email');
-      const result = await sendOtp({ email });
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+      // Write OTP to Firestore from the client
+      await setDoc(doc(db, 'otp', email), {
+        email,
+        otp,
+        expiresAt,
+      });
+
+      // Call the server flow just to send the email
+      const result = await sendOtp({ email, otp });
       if (result.success) {
         toast({
           title: 'Code Sent',

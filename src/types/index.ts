@@ -42,6 +42,7 @@ export interface AnalyticsData {
 // Schema for sending OTP
 export const SendOtpInputSchema = z.object({
   email: z.string().email(),
+  otp: z.string().optional(),
 });
 export type SendOtpInput = z.infer<typeof SendOtpInputSchema>;
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, User, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { onAuthStateChanged, User, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInAnonymously } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { LoginCredentials, SignupCredentials, AppUser } from '@/types';
@@ -27,26 +27,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        const userRef = doc(db, 'users', firebaseUser.uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          const appUser = userSnap.data() as AppUser;
-          setUser(appUser);
+        if (firebaseUser.isAnonymous) {
+            // This is a temporary anonymous user.
+            // We can create a lightweight AppUser object for them.
+            setUser({
+                id: firebaseUser.uid,
+                email: 'anonymous',
+                name: 'Guest',
+                role: 'user',
+                createdAt: serverTimestamp(),
+            });
         } else {
-          // This handles users signing in for the first time via Google
-          const newUser: AppUser = {
-            id: firebaseUser.uid,
-            email: firebaseUser.email!,
-            name: firebaseUser.displayName,
-            role: 'user',
-            createdAt: serverTimestamp(),
-            photoURL: firebaseUser.photoURL,
-          };
-          await setDoc(userRef, newUser);
-          setUser(newUser);
+            // This is a real, signed-in user.
+            const userRef = doc(db, 'users', firebaseUser.uid);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+                const appUser = userSnap.data() as AppUser;
+                setUser(appUser);
+            } else {
+                // This handles users signing in for the first time via Google
+                const newUser: AppUser = {
+                    id: firebaseUser.uid,
+                    email: firebaseUser.email!,
+                    name: firebaseUser.displayName,
+                    role: 'user',
+                    createdAt: serverTimestamp(),
+                    photoURL: firebaseUser.photoURL,
+                };
+                await setDoc(userRef, newUser);
+                setUser(newUser);
+            }
         }
       } else {
-        setUser(null);
+        // No user is signed in at all, sign them in anonymously.
+        await signInAnonymously(auth);
       }
       setLoading(false);
     });

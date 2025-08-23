@@ -6,9 +6,10 @@
  */
 import { z } from 'genkit';
 import { ai } from '@/ai/genkit';
-import { getAdminDb } from '@/lib/firebase-admin';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, deleteDoc, Timestamp } from "firebase/firestore";
 import { VerifyOtpInputSchema, VerifyOtpOutputSchema } from '@/types';
-import { Timestamp } from 'firebase-admin/firestore';
+
 
 export async function verifyOtp(input: z.infer<typeof VerifyOtpInputSchema>): Promise<z.infer<typeof VerifyOtpOutputSchema>> {
   return verifyOtpFlow(input);
@@ -21,13 +22,12 @@ const verifyOtpFlow = ai.defineFlow(
     outputSchema: VerifyOtpOutputSchema,
   },
   async ({ email, otp }) => {
-    const db = getAdminDb();
-    const otpDocRef = db.collection('otp').doc(email);
+    const otpDocRef = doc(db, 'otp', email);
 
     try {
-      const otpDoc = await otpDocRef.get();
+      const otpDoc = await getDoc(otpDocRef);
 
-      if (!otpDoc.exists) {
+      if (!otpDoc.exists()) {
         return { success: false, message: 'Invalid or expired OTP.' };
       }
 
@@ -36,12 +36,12 @@ const verifyOtpFlow = ai.defineFlow(
 
       if (data?.otp !== otp || expiresAt < new Date()) {
         // For security, delete the invalid OTP attempt
-        await otpDocRef.delete();
+        await deleteDoc(otpDocRef);
         return { success: false, message: 'Invalid or expired OTP.' };
       }
 
       // OTP is valid, delete it to prevent reuse
-      await otpDocRef.delete();
+      await deleteDoc(otpDocRef);
 
       return { success: true, message: 'OTP verified successfully.' };
     } catch (error: any) {
