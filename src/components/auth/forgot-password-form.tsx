@@ -33,6 +33,7 @@ export function ForgotPasswordForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
+      // We now call our Genkit flow which wraps the Firebase SDK call.
       const result = await sendPasswordReset(values);
       if (result.success) {
         setIsSubmitted(true);
