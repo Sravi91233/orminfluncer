@@ -19,7 +19,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
-import { BarChart3, LayoutDashboard, LogOut, Search, Users, Bot, UserCircle } from 'lucide-react';
+import { BarChart3, LayoutDashboard, LogOut, Search, Settings, ShieldCheck, Users, Bot, UserCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,6 +41,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const menuItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, admin: false },
     { href: '/search', label: 'Search', icon: Search, admin: false },
+    { href: '/subscription', label: 'Subscription', icon: ShieldCheck, admin: false },
+    { href: '/profile', label: 'Profile & Settings', icon: Settings, admin: false },
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, admin: true },
     { href: '/admin/users', label: 'Users', icon: Users, admin: true },
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart3, admin: true },
@@ -72,7 +74,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                 <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.label}>
+                 <SidebarMenuButton asChild isActive={pathname.startsWith(item.href)} tooltip={item.label}>
                     <Link href={item.href}>
                       <item.icon />
                       <span>{item.label}</span>
@@ -121,6 +123,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+               <DropdownMenuItem onClick={() => router.push('/profile')}>
+                <UserCircle className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>

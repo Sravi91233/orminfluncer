@@ -21,6 +21,7 @@ export interface Influencer {
   engagementRate: number;
   bio: string;
   city: string;
+  country?: string;
   category: 'Fashion' | 'Fitness' | 'Food' | 'Travel' | 'Tech';
 }
 

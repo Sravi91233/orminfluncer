@@ -10,17 +10,21 @@ import { influencers } from '@/lib/mock-data';
 import { exportToCsv } from '@/lib/csv-export';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpDown, Download, LoaderCircle, Search } from 'lucide-react';
+import { ArrowUpDown, Download, LoaderCircle, Search, Twitter, Youtube, Instagram, Briefcase, Maximize, User, MapPin, BarChart2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { useSearchParams } from 'next/navigation';
 
 const searchFormSchema = z.object({
   city: z.string().optional(),
+  country: z.string().optional(),
   category: z.string().optional(),
   followerCount: z.coerce.number().min(0).optional(),
   currentSearchTerms: z.string().optional(),
@@ -28,7 +32,17 @@ const searchFormSchema = z.object({
 
 type SortKey = keyof Influencer;
 
+const PlatformIcon = ({ platform }: { platform: Influencer['platform'] }) => {
+    switch (platform) {
+        case 'Instagram': return <Instagram className="h-4 w-4" />;
+        case 'TikTok': return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M16 8.35a4 4 0 1 0-8 0V17a4 4 0 1 0 8 0V8.35Z"></path><path d="M12 17v-4.65"></path></svg>;
+        case 'YouTube': return <Youtube className="h-4 w-4" />;
+        default: return <Briefcase className="h-4 w-4" />;
+    }
+}
+
 export function InfluencerSearchPage() {
+  const searchParams = useSearchParams();
   const [results, setResults] = React.useState<Influencer[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isAiLoading, setIsAiLoading] = React.useState(false);
@@ -38,21 +52,35 @@ export function InfluencerSearchPage() {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [sortConfig, setSortConfig] = React.useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>(null);
   const resultsPerPage = 10;
+  
+  const [selectedInfluencer, setSelectedInfluencer] = React.useState<Influencer | null>(null);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
 
   const form = useForm<z.infer<typeof searchFormSchema>>({
     resolver: zodResolver(searchFormSchema),
-    defaultValues: { city: '', category: '', followerCount: 0, currentSearchTerms: '' },
+    defaultValues: { city: '', country: '', category: '', followerCount: 0, currentSearchTerms: searchParams.get('q') || '' },
   });
+  
+  React.useEffect(() => {
+    if (form.getValues('currentSearchTerms')) {
+      handleSearch(form.getValues());
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSearch = async (values: z.infer<typeof searchFormSchema>) => {
     setIsLoading(true);
     setIsAiLoading(true);
+    setSuggestions([]);
 
     // Simulate API call for search
     setTimeout(() => {
       let filtered = influencers;
       if (values.city) {
         filtered = filtered.filter((i) => i.city.toLowerCase().includes(values.city!.toLowerCase()));
+      }
+      if (values.country) {
+        filtered = filtered.filter((i) => i.country?.toLowerCase().includes(values.country!.toLowerCase()));
       }
       if (values.category) {
         filtered = filtered.filter((i) => i.category === values.category);
@@ -86,6 +114,11 @@ export function InfluencerSearchPage() {
       setIsAiLoading(false);
     }
   };
+  
+  const handleViewDetails = (influencer: Influencer) => {
+    setSelectedInfluencer(influencer);
+    setIsModalOpen(true);
+  }
 
   const handleSort = (key: SortKey) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -141,7 +174,7 @@ export function InfluencerSearchPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSearch)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+            <form onSubmit={form.handleSubmit(handleSearch)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-end">
               <FormField name="currentSearchTerms" control={form.control} render={({ field }) => (
                 <FormItem>
                   <FormLabel>Keywords</FormLabel>
@@ -155,6 +188,14 @@ export function InfluencerSearchPage() {
                   <FormLabel>City</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g. New York" {...field} />
+                  </FormControl>
+                </FormItem>
+              )}/>
+              <FormField name="country" control={form.control} render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Country</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. USA" {...field} />
                   </FormControl>
                 </FormItem>
               )}/>
@@ -185,7 +226,7 @@ export function InfluencerSearchPage() {
                   </FormControl>
                 </FormItem>
               )}/>
-              <div className="lg:col-span-4 flex justify-end">
+              <div className="lg:col-span-full flex justify-end">
                 <Button type="submit" disabled={isLoading}>
                   {isLoading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4"/>}
                   Search
@@ -214,7 +255,10 @@ export function InfluencerSearchPage() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Search Results</CardTitle>
+          <div>
+            <CardTitle>Search Results</CardTitle>
+            <CardDescription>{results.length} influencers found.</CardDescription>
+          </div>
           <Button variant="outline" size="sm" onClick={handleExport} disabled={results.length === 0}>
             <Download className="mr-2 h-4 w-4"/>
             Export CSV
@@ -230,28 +274,34 @@ export function InfluencerSearchPage() {
                   <TableHead onClick={() => handleSort('followers')} className="cursor-pointer"><div className="flex items-center">Followers <ArrowUpDown className="ml-2 h-4 w-4" /></div></TableHead>
                   <TableHead onClick={() => handleSort('engagementRate')} className="cursor-pointer"><div className="flex items-center">Eng. Rate <ArrowUpDown className="ml-2 h-4 w-4" /></div></TableHead>
                   <TableHead>Bio</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                       <LoaderCircle className="mx-auto h-6 w-6 animate-spin text-primary" />
                     </TableCell>
                   </TableRow>
                 ) : paginatedResults.length > 0 ? (
                   paginatedResults.map((influencer) => (
-                    <TableRow key={influencer.id}>
+                    <TableRow key={influencer.id} className="cursor-pointer" onClick={() => handleViewDetails(influencer)}>
                       <TableCell className="font-medium">{influencer.handle}</TableCell>
-                      <TableCell><Badge variant="outline">{influencer.platform}</Badge></TableCell>
+                      <TableCell><Badge variant="outline" className="flex items-center gap-2"><PlatformIcon platform={influencer.platform} /> {influencer.platform}</Badge></TableCell>
                       <TableCell>{(influencer.followers / 1000).toFixed(1)}k</TableCell>
                       <TableCell>{influencer.engagementRate.toFixed(2)}%</TableCell>
                       <TableCell className="max-w-xs truncate">{influencer.bio}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleViewDetails(influencer); }}>
+                            <Maximize className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                       No results found. Try a different search.
                     </TableCell>
                   </TableRow>
@@ -282,6 +332,63 @@ export function InfluencerSearchPage() {
           )}
         </CardContent>
       </Card>
+      
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          {selectedInfluencer && (
+            <>
+              <DialogHeader>
+                 <div className="flex items-center gap-4">
+                    <Avatar className="h-16 w-16">
+                        <AvatarImage src={`https://i.pravatar.cc/150?u=${selectedInfluencer.handle}`} />
+                        <AvatarFallback>{selectedInfluencer.handle.substring(1,3).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                        <DialogTitle className="text-2xl">{selectedInfluencer.handle}</DialogTitle>
+                        <DialogDescription className="flex items-center gap-2 mt-1">
+                          <PlatformIcon platform={selectedInfluencer.platform} /> {selectedInfluencer.platform}
+                        </DialogDescription>
+                    </div>
+                </div>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                 <p className="text-sm text-muted-foreground">{selectedInfluencer.bio}</p>
+                 <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-primary" />
+                        <div>
+                            <p className="font-semibold">{(selectedInfluencer.followers / 1000).toFixed(1)}k</p>
+                            <p className="text-xs text-muted-foreground">Followers</p>
+                        </div>
+                    </div>
+                     <div className="flex items-center gap-2">
+                        <BarChart2 className="h-4 w-4 text-primary" />
+                        <div>
+                            <p className="font-semibold">{selectedInfluencer.engagementRate.toFixed(2)}%</p>
+                            <p className="text-xs text-muted-foreground">Engagement</p>
+                        </div>
+                    </div>
+                     <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-primary" />
+                        <div>
+                            <p className="font-semibold">{selectedInfluencer.city}, {selectedInfluencer.country}</p>
+                            <p className="text-xs text-muted-foreground">Location</p>
+                        </div>
+                    </div>
+                     <div className="flex items-center gap-2">
+                        <Briefcase className="h-4 w-4 text-primary" />
+                        <div>
+                            <p className="font-semibold">{selectedInfluencer.category}</p>
+                            <p className="text-xs text-muted-foreground">Category</p>
+                        </div>
+                    </div>
+                 </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
