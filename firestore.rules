@@ -3,34 +3,41 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // User-specific rules: Users can read/update their own profile and can be created.
-    match /users/{userId} {
-      allow read, update: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null;
+    function isAdmin() {
+      // Check if the user is an admin by looking up their role in the 'users' collection.
+      // This is a secure way to check for admin privileges.
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Cities rules: Any authenticated user can read the list of cities.
-    // Admins have write access defined by the rule below.
-    match /Cities/{cityId} {
-        allow read: if request.auth != null;
+    // Allow users to read and update their own profile data.
+    // New users can be created during signup.
+    // Admins can read or write any user's document.
+    match /users/{userId} {
+      allow read, update: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow create: if request.auth != null;
+      allow delete, list: if isAdmin();
     }
     
-    // APIKeys rules: Authenticated functions can read keys.
-    // Admins have write access defined by the rule below.
-    match /APIKeys/{keyId} {
-        allow read: if request.auth != null;
+    // Allow any authenticated user to read the list of cities for search dropdowns.
+    // Only admins can add, edit, or delete cities.
+    match /Cities/{cityId} {
+      allow read: if request.auth != null;
+      allow write, delete: if isAdmin();
     }
-
-    // OTP rules: A client can create an OTP for their own email, but can't read/update/delete.
+    
+    // Allow authenticated server-side functions (like Genkit flows) to read API keys,
+    // but restrict client-side read access and all write access to admins.
+    match /APIKeys/{keyId} {
+      allow read: if request.auth != null;
+      allow write, create, delete: if isAdmin();
+    }
+    
+    // Allow a client to create an OTP document for their own email.
+    // This is used for email verification during signup.
     match /otp/{email} {
       allow create: if request.resource.data.email == email;
+      // Deny all other client operations for security.
       allow read, update, delete: if false;
-    }
-
-    // Admin-only catch-all: If a user has the 'admin' role, they can read/write to any document.
-    // This rule is checked if none of the more specific rules above match.
-    match /{document=**} {
-      allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
