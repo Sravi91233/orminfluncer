@@ -55,24 +55,24 @@ const searchInfluencersFlow = ai.defineFlow(
         console.log(`\n[searchInfluencersFlow] EXECUTING API CALL FOR PAGE ${currentPage}:`);
         console.log(curlCommand, '\n');
 
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'x-rapidapi-key': apiKey,
-                'x-rapidapi-host': 'ylytic-influencers-api.p.rapidapi.com',
-            },
-        });
-
-        console.log(`[searchInfluencersFlow] Received API response for page ${currentPage} with status: ${response.status}`);
-        if (!response.ok) {
-           const errorText = await response.text();
-           console.error(`[searchInfluencersFlow] API Error for page ${currentPage} (${response.status}): ${errorText}`);
-           // Continue to next page if one fails
-           currentPage++;
-           continue;
-        }
-
         try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'x-rapidapi-key': apiKey,
+                    'x-rapidapi-host': 'ylytic-influencers-api.p.rapidapi.com',
+                },
+            });
+
+            console.log(`[searchInfluencersFlow] Received API response for page ${currentPage} with status: ${response.status}`);
+            if (!response.ok) {
+               const errorText = await response.text();
+               console.error(`[searchInfluencersFlow] API Error for page ${currentPage} (${response.status}): ${errorText}`);
+               // Continue to next page if one fails
+               currentPage++;
+               continue;
+            }
+
            const data = await response.json();
            console.log(`[searchInfluencersFlow] Successfully parsed JSON for page ${currentPage}.`);
            
@@ -95,8 +95,8 @@ const searchInfluencersFlow = ai.defineFlow(
            allResults.push(...pageResults);
            console.log(`[searchInfluencersFlow] Page ${currentPage} processed. Total creators so far: ${allResults.length}`);
 
-        } catch (jsonError) {
-           console.error(`[searchInfluencersFlow] Failed to parse JSON for page ${currentPage}. Status: ${response.status}`, jsonError);
+        } catch (pageError) {
+           console.error(`[searchInfluencersFlow] Failed to fetch or process page ${currentPage}.`, pageError);
         }
 
         currentPage++;
