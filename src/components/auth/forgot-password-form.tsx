@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,13 +11,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { LoaderCircle } from 'lucide-react';
+import { sendPasswordReset } from '@/ai/flows/send-password-reset-flow';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
 });
 
 export function ForgotPasswordForm() {
-  const { sendPasswordReset } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -34,8 +33,12 @@ export function ForgotPasswordForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      await sendPasswordReset(values.email);
-      setIsSubmitted(true);
+      const result = await sendPasswordReset(values);
+      if (result.success) {
+        setIsSubmitted(true);
+      } else {
+        throw new Error(result.message);
+      }
     } catch (error: any) {
       toast({
         variant: 'destructive',

@@ -66,3 +66,15 @@ export const VerifyOtpOutputSchema = z.object({
     message: z.string(),
 });
 export type VerifyOtpOutput = z.infer<typeof VerifyOtpOutputSchema>;
+
+
+export const SendPasswordResetInputSchema = z.object({
+  email: z.string().email(),
+});
+export type SendPasswordResetInput = z.infer<typeof SendPasswordResetInputSchema>;
+
+export const SendPasswordResetOutputSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+});
+export type SendPasswordResetOutput = z.infer<typeof SendPasswordResetOutputSchema>;
