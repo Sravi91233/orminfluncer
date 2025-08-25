@@ -6,6 +6,7 @@
 import { ai } from '@/ai/genkit';
 import { SearchInfluencersInputSchema, SearchInfluencersOutputSchema, Influencer } from '@/types';
 import { z } from 'zod';
+import { saveInfluencersToFirestore } from '@/services/influencer-service';
 
 export async function searchInfluencers(
   input: z.infer<typeof SearchInfluencersInputSchema>
@@ -77,6 +78,17 @@ const searchInfluencersFlow = ai.defineFlow(
        }));
        
        console.log(`[searchInfluencersFlow] Page ${currentPage} processed. Found ${pageResults.length} creators.`);
+       
+       if (pageResults.length > 0 && city && city !== 'Any City' && platform && platform !== 'any') {
+         try {
+            await saveInfluencersToFirestore(city, platform, pageResults);
+            console.log(`[searchInfluencersFlow] Successfully triggered save for ${pageResults.length} influencers.`);
+         } catch (dbError: any) {
+            console.error(`[searchInfluencersFlow] Database save failed: ${dbError.message}`);
+            // We can decide if a DB error should fail the whole flow. For now, we will log it and continue.
+         }
+       }
+
 
       return {
         success: true,
