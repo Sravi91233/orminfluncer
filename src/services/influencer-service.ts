@@ -19,13 +19,16 @@ export async function saveInfluencersToFirestore(city: string, platform: string,
     return false;
   }
 
-  console.log(`[saveInfluencersToFirestore] Starting batch write for ${influencers.length} influencers to city: ${city}, platform: ${platform}`);
+  const cityStr = city.toLowerCase();
+  const platformStr = platform.toLowerCase();
+
+  console.log(`[saveInfluencersToFirestore] Starting batch write for ${influencers.length} influencers to city: ${cityStr}, platform: ${platformStr}`);
 
   const batch = writeBatch(db);
 
   influencers.forEach((influencer) => {
-    // Use the influencer's handle as the document ID for idempotency
-    const docRef = doc(db, 'influencers', city, platform, influencer.handle);
+    // Correctly construct the path for the nested collection
+    const docRef = doc(db, 'influencers', cityStr, platformStr, influencer.handle);
     batch.set(docRef, influencer);
   });
 
