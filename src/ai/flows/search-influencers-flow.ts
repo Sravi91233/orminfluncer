@@ -79,6 +79,7 @@ const searchInfluencersFlow = ai.defineFlow(
        
        console.log(`[searchInfluencersFlow] Page ${currentPage} processed. Found ${pageResults.length} creators.`);
        
+       // Automatically save results to Firestore if a specific city and platform were searched
        if (pageResults.length > 0 && city && city !== 'Any City' && platform && platform !== 'any') {
          try {
             await saveInfluencersToFirestore(city, platform, pageResults);
