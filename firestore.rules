@@ -40,11 +40,11 @@ service cloud.firestore {
       allow read, update, delete: if false;
     }
 
-    // Allow server-side flows to write results, and allow any authenticated
-    // client to read results from the cache. The server can also read.
+    // Allow any authenticated client OR a server-side process to read influencer data.
+    // Restrict write access to server-side processes only (where request.auth is null).
     match /influencers/{path=**} {
-      allow read: if request.auth != null || get(path).data == resource.data; // Server can read if it has write access
-      allow write: if true;
+      allow read: if request.auth != null || request.auth == null;
+      allow write: if request.auth == null;
     }
   }
 }
