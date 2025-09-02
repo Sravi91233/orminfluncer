@@ -108,13 +108,13 @@ export function InfluencerSearchPage() {
                 setIsSearching(false);
             }
         } else {
-          // Clear results if "Any City" is selected
           setResults([]);
           setDataSource('none');
         }
     };
     fetchCachedData();
-  }, [selectedCity, toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCity]);
 
 
   const handleSearchFromApi = async (values: z.infer<typeof searchFormSchema>, page = 1) => {
@@ -136,7 +136,6 @@ export function InfluencerSearchPage() {
         setResults(prev => {
           const newResults = response.results || [];
           const combined = page === 1 ? newResults : [...prev, ...newResults];
-          // Filter out duplicates by creating a map of unique IDs
           const uniqueResults = Array.from(new Map(combined.map(item => [item.id, item])).values());
           return uniqueResults;
         });
