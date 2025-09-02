@@ -257,7 +257,7 @@ export function InfluencerSearchPage() {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Any Platform" />
-                        </Trigger>
+                          </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="any">Any Platform</SelectItem>

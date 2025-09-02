@@ -97,16 +97,6 @@ export const SendPasswordResetOutputSchema = z.object({
 });
 export type SendPasswordResetOutput = z.infer<typeof SendPasswordResetOutputSchema>;
 
-// Schema for influencer search
-export const SearchInfluencersInputSchema = z.object({
-  city: z.string().optional(),
-  category: z.string().optional(),
-  platform: z.string().optional(),
-  bio: z.string().optional(),
-  currentPage: z.number().optional(),
-});
-export type SearchInfluencersInput = z.infer<typeof SearchInfluencersInputSchema>;
-
 export const InfluencerSchema = z.object({
     id: z.string(),
     handle: z.string(),
@@ -119,6 +109,16 @@ export const InfluencerSchema = z.object({
     category: z.string(),
 });
 
+// Schema for influencer search
+export const SearchInfluencersInputSchema = z.object({
+  city: z.string().optional(),
+  category: z.string().optional(),
+  platform: z.string().optional(),
+  bio: z.string().optional(),
+  currentPage: z.number().optional(),
+});
+export type SearchInfluencersInput = z.infer<typeof SearchInfluencersInputSchema>;
+
 export const SearchInfluencersOutputSchema = z.object({
   success: z.boolean(),
   message: z.string(),
@@ -127,3 +127,18 @@ export const SearchInfluencersOutputSchema = z.object({
   currentPage: z.number(),
 });
 export type SearchInfluencersOutput = z.infer<typeof SearchInfluencersOutputSchema>;
+
+
+// Schema for fetching cached influencers
+export const GetCachedInfluencersInputSchema = z.object({
+  city: z.string().min(1, 'City is required.'),
+  platform: z.string().optional(),
+});
+export type GetCachedInfluencersInput = z.infer<typeof GetCachedInfluencersInputSchema>;
+
+export const GetCachedInfluencersOutputSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  results: z.array(InfluencerSchema),
+});
+export type GetCachedInfluencersOutput = z.infer<typeof GetCachedInfluencersOutputSchema>;

@@ -8,18 +8,7 @@
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
 import { getInfluencersFromFirestore } from '@/services/influencer-service';
-import { InfluencerSchema } from '@/types';
-
-export const GetCachedInfluencersInputSchema = z.object({
-  city: z.string().min(1, 'City is required.'),
-  platform: z.string().optional(),
-});
-
-export const GetCachedInfluencersOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-  results: z.array(InfluencerSchema),
-});
+import { GetCachedInfluencersInputSchema, GetCachedInfluencersOutputSchema } from '@/types';
 
 
 export async function getCachedInfluencers(
