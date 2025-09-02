@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -5,9 +6,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { searchInfluencers } from '@/ai/flows/search-influencers-flow';
+import { getCachedInfluencers } from '@/ai/flows/get-cached-influencers-flow';
 import type { AppCity, Influencer } from '@/types';
 import { exportToCsv } from '@/lib/csv-export';
-import { getInfluencersFromFirestore } from '@/services/influencer-service';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,8 +65,10 @@ export function InfluencerSearchPage() {
 
   const form = useForm<z.infer<typeof searchFormSchema>>({
     resolver: zodResolver(searchFormSchema),
-    defaultValues: { city: '', category: '', platform: 'any', bio: '' },
+    defaultValues: { city: 'Any City', category: '', platform: 'any', bio: '' },
   });
+
+  const selectedCity = form.watch('city');
 
   React.useEffect(() => {
     const fetchCities = async () => {
@@ -82,26 +85,37 @@ export function InfluencerSearchPage() {
     fetchCities();
   }, [toast]);
   
-  const handleSearchFromCache = async (values: z.infer<typeof searchFormSchema>) => {
-      if (!values.city || values.city === 'Any City') {
-          toast({ variant: 'destructive', title: 'Please select a city', description: 'Cached search requires a specific city.' });
-          return;
-      }
-      setIsSearching(true);
-      setResults([]);
-      try {
-          const cachedResults = await getInfluencersFromFirestore(values.city, values.platform === 'any' ? undefined : values.platform);
-          setResults(cachedResults);
-          setDataSource(cachedResults.length > 0 ? 'cache' : 'none');
-          if(cachedResults.length === 0) {
-              toast({ title: 'No cached results', description: 'No cached data found. Try a live search.' });
-          }
-      } catch (error: any) {
-          toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch from cache.' });
-      } finally {
-          setIsSearching(false);
-      }
-  };
+  React.useEffect(() => {
+    const fetchCachedData = async () => {
+        if (selectedCity && selectedCity !== 'Any City') {
+            setIsSearching(true);
+            setDataSource('none');
+            setResults([]);
+            try {
+                const response = await getCachedInfluencers({ city: selectedCity });
+                if (response.success) {
+                    setResults(response.results);
+                    setDataSource(response.results.length > 0 ? 'cache' : 'none');
+                     if(response.results.length === 0) {
+                        toast({ title: 'No cached results', description: 'No cached data found for this city. Try a live search.' });
+                    }
+                } else {
+                    toast({ variant: 'destructive', title: 'Cache Fetch Failed', description: response.message });
+                }
+            } catch (error: any) {
+                toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch from cache.' });
+            } finally {
+                setIsSearching(false);
+            }
+        } else {
+          // Clear results if "Any City" is selected
+          setResults([]);
+          setDataSource('none');
+        }
+    };
+    fetchCachedData();
+  }, [selectedCity, toast]);
+
 
   const handleSearchFromApi = async (values: z.infer<typeof searchFormSchema>, page = 1) => {
     if (page === 1) {
@@ -162,7 +176,7 @@ export function InfluencerSearchPage() {
   };
   
   const handleReset = () => {
-    form.reset({ city: '', category: '', platform: 'any', bio: '' });
+    form.reset({ city: 'Any City', category: '', platform: 'any', bio: '' });
     setResults([]);
     setCurrentPage(1);
     setTotalPages(0);
@@ -211,7 +225,7 @@ export function InfluencerSearchPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit((values) => handleSearchFromCache(values))} className="space-y-4">
+            <form onSubmit={form.handleSubmit(v => handleSearchFromApi(v, 1))} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <FormField name="city" control={form.control} render={({ field }) => (
                   <FormItem>
@@ -244,7 +258,7 @@ export function InfluencerSearchPage() {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Any Platform" />
-                        </SelectTrigger>
+                        </Trigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="any">Any Platform</SelectItem>
@@ -265,12 +279,8 @@ export function InfluencerSearchPage() {
               <div className="flex justify-end gap-2">
                  <Button type="button" variant="outline" onClick={handleReset}>Reset</Button>
                 <Button type="submit" disabled={isSearching}>
-                  {isSearching ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin"/> : <Database className="mr-2 h-4 w-4"/>}
-                  Search from Cache
-                </Button>
-                <Button type="button" disabled={isSearching} onClick={form.handleSubmit(v => handleSearchFromApi(v, 1))}>
                   {isSearching ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4"/>}
-                  Search Live
+                  Search Live API
                 </Button>
               </div>
             </form>
