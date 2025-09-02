@@ -23,6 +23,7 @@ export interface Influencer {
   city: string;
   country?: string;
   category: string;
+  link: string;
 }
 
 export interface AppUser {
@@ -107,6 +108,7 @@ export const InfluencerSchema = z.object({
     city: z.string(),
     country: z.string().optional(),
     category: z.string(),
+    link: z.string(),
 });
 
 // Schema for influencer search

@@ -75,6 +75,7 @@ const searchInfluencersFlow = ai.defineFlow(
            city: creator.city || 'N/A',
            country: creator.country || 'N/A',
            category: creator.category || 'N/A',
+           link: creator.handle_link || '',
        }));
        
        console.log(`[searchInfluencersFlow] Page ${currentPage} processed. Found ${pageResults.length} creators.`);

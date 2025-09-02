@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpDown, Download, LoaderCircle, Search, Youtube, Instagram, Briefcase, Maximize, User, MapPin, BarChart2, RefreshCw, Database } from 'lucide-react';
+import { ArrowUpDown, Download, LoaderCircle, Search, Youtube, Instagram, Briefcase, Maximize, User, MapPin, BarChart2, RefreshCw, Database, Link as LinkIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -320,13 +320,14 @@ export function InfluencerSearchPage() {
                   <TableHead onClick={() => handleSort('followers')} className="cursor-pointer"><div className="flex items-center">Followers <ArrowUpDown className="ml-2 h-4 w-4" /></div></TableHead>
                   <TableHead onClick={() => handleSort('engagementRate')} className="cursor-pointer"><div className="flex items-center">Eng. Rate <ArrowUpDown className="ml-2 h-4 w-4" /></div></TableHead>
                   <TableHead>Bio</TableHead>
+                  <TableHead>Link</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isSearching ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
                       <LoaderCircle className="mx-auto h-6 w-6 animate-spin text-primary" />
                     </TableCell>
                   </TableRow>
@@ -338,6 +339,13 @@ export function InfluencerSearchPage() {
                       <TableCell>{formatFollowers(influencer.followers)}</TableCell>
                       <TableCell>{influencer.engagementRate.toFixed(2)}%</TableCell>
                       <TableCell className="max-w-xs truncate">{influencer.bio}</TableCell>
+                      <TableCell>
+                        <a href={influencer.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon">
+                            <LinkIcon className="h-4 w-4" />
+                          </Button>
+                        </a>
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleViewDetails(influencer); }}>
                             <Maximize className="h-4 w-4" />
@@ -347,7 +355,7 @@ export function InfluencerSearchPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
                       No results found. Try adjusting your search criteria.
                     </TableCell>
                   </TableRow>
