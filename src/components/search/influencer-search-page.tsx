@@ -4,10 +4,10 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { suggestSearchTerms } from '@/ai/flows/suggest-search-terms';
 import { searchInfluencers } from '@/ai/flows/search-influencers-flow';
 import type { AppCity, Influencer } from '@/types';
 import { exportToCsv } from '@/lib/csv-export';
+import { getInfluencersFromFirestore } from '@/services/influencer-service';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpDown, Download, LoaderCircle, Search, Youtube, Instagram, Briefcase, Maximize, User, MapPin, BarChart2 } from 'lucide-react';
+import { ArrowUpDown, Download, LoaderCircle, Search, Youtube, Instagram, Briefcase, Maximize, User, MapPin, BarChart2, RefreshCw, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -39,7 +39,7 @@ const PlatformIcon = ({ platform }: { platform: Influencer['platform'] }) => {
         case 'youtube': return <Youtube className="h-4 w-4" />;
         default: return <Briefcase className="h-4 w-4" />;
     }
-}
+};
 
 const uniquePlatforms: string[] = ["Instagram", "TikTok", "YouTube"];
 
@@ -47,10 +47,8 @@ const uniquePlatforms: string[] = ["Instagram", "TikTok", "YouTube"];
 export function InfluencerSearchPage() {
   const [results, setResults] = React.useState<Influencer[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
-  const [isAiLoading, setIsAiLoading] = React.useState(false);
-  const [suggestions, setSuggestions] = React.useState<string[]>([]);
   const { toast } = useToast();
-
+  
   const [availableCities, setAvailableCities] = React.useState<string[]>([]);
   
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -62,6 +60,7 @@ export function InfluencerSearchPage() {
   
   const [selectedInfluencer, setSelectedInfluencer] = React.useState<Influencer | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [dataSource, setDataSource] = React.useState<'none' | 'cache' | 'live'>('none');
 
   const form = useForm<z.infer<typeof searchFormSchema>>({
     resolver: zodResolver(searchFormSchema),
@@ -83,10 +82,31 @@ export function InfluencerSearchPage() {
     fetchCities();
   }, [toast]);
   
-  const handleSearch = async (values: z.infer<typeof searchFormSchema>, page = 1) => {
+  const handleSearchFromCache = async (values: z.infer<typeof searchFormSchema>) => {
+      if (!values.city || values.city === 'Any City') {
+          toast({ variant: 'destructive', title: 'Please select a city', description: 'Cached search requires a specific city.' });
+          return;
+      }
+      setIsSearching(true);
+      setResults([]);
+      try {
+          const cachedResults = await getInfluencersFromFirestore(values.city, values.platform === 'any' ? undefined : values.platform);
+          setResults(cachedResults);
+          setDataSource(cachedResults.length > 0 ? 'cache' : 'none');
+          if(cachedResults.length === 0) {
+              toast({ title: 'No cached results', description: 'No cached data found. Try a live search.' });
+          }
+      } catch (error: any) {
+          toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch from cache.' });
+      } finally {
+          setIsSearching(false);
+      }
+  };
+
+  const handleSearchFromApi = async (values: z.infer<typeof searchFormSchema>, page = 1) => {
     if (page === 1) {
       setIsSearching(true);
-      setResults([]); // Clear previous results on a new search
+      setResults([]); 
     } else {
       setIsLoadingMore(true);
     }
@@ -102,20 +122,13 @@ export function InfluencerSearchPage() {
         setResults(prev => page === 1 ? response.results : [...prev, ...response.results]);
         setCurrentPage(response.currentPage);
         setTotalPages(response.totalPages);
+        setDataSource('live');
       } else {
-        toast({
-          variant: 'destructive',
-          title: 'Search Failed',
-          description: response.message,
-        });
+        toast({ variant: 'destructive', title: 'Search Failed', description: response.message });
         setResults([]);
       }
     } catch (error: any) {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: error.message || 'An unexpected error occurred.',
-        });
+        toast({ variant: 'destructive', title: 'Error', description: error.message || 'An unexpected error occurred.'});
         setResults([]);
     } finally {
         setIsSearching(false);
@@ -125,7 +138,7 @@ export function InfluencerSearchPage() {
 
   const loadMoreResults = () => {
     if (currentPage < totalPages) {
-      handleSearch(form.getValues(), currentPage + 1);
+      handleSearchFromApi(form.getValues(), currentPage + 1);
     }
   };
   
@@ -143,11 +156,11 @@ export function InfluencerSearchPage() {
   };
   
   const handleReset = () => {
-    form.reset();
+    form.reset({ city: '', category: '', platform: 'any', bio: '' });
     setResults([]);
-    setSuggestions([]);
     setCurrentPage(1);
     setTotalPages(0);
+    setDataSource('none');
   }
 
   const sortedResults = React.useMemo(() => {
@@ -171,11 +184,7 @@ export function InfluencerSearchPage() {
 
   const handleExport = () => {
     if (results.length === 0) {
-      toast({
-        variant: 'destructive',
-        title: 'Export Failed',
-        description: 'No data to export.',
-      });
+      toast({ variant: 'destructive', title: 'Export Failed', description: 'No data to export.' });
       return;
     }
     exportToCsv(results, 'influencers.csv');
@@ -196,12 +205,12 @@ export function InfluencerSearchPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit((values) => handleSearch(values, 1))} className="space-y-4">
+            <form onSubmit={form.handleSubmit((values) => handleSearchFromCache(values))} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <FormField name="city" control={form.control} render={({ field }) => (
                   <FormItem>
                     <FormLabel>City</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Any City" />
@@ -225,7 +234,7 @@ export function InfluencerSearchPage() {
                 <FormField name="platform" control={form.control} render={({ field }) => (
                   <FormItem>
                     <FormLabel>Platform</FormLabel>
-                     <Select onValueChange={field.onChange} defaultValue={field.value}>
+                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Any Platform" />
@@ -250,8 +259,12 @@ export function InfluencerSearchPage() {
               <div className="flex justify-end gap-2">
                  <Button type="button" variant="outline" onClick={handleReset}>Reset</Button>
                 <Button type="submit" disabled={isSearching}>
+                  {isSearching ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin"/> : <Database className="mr-2 h-4 w-4"/>}
+                  Search from Cache
+                </Button>
+                <Button type="button" disabled={isSearching} onClick={form.handleSubmit(v => handleSearchFromApi(v, 1))}>
                   {isSearching ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4"/>}
-                  Search
+                  Search Live
                 </Button>
               </div>
             </form>
@@ -263,12 +276,24 @@ export function InfluencerSearchPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Search Results</CardTitle>
-            <CardDescription>{results.length} influencers found.</CardDescription>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CardDescription>{results.length} influencers found.</CardDescription>
+                {dataSource === 'cache' && <Badge variant="secondary" className="gap-1"><Database className="h-3 w-3" />From Cache</Badge>}
+                {dataSource === 'live' && <Badge variant="default" className="gap-1"><RefreshCw className="h-3 w-3" />Live Results</Badge>}
+            </div>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={results.length === 0}>
-            <Download className="mr-2 h-4 w-4"/>
-            Export CSV
-          </Button>
+           <div className="flex items-center gap-2">
+            {dataSource === 'cache' && (
+               <Button variant="outline" size="sm" onClick={form.handleSubmit(v => handleSearchFromApi(v, 1))} disabled={isSearching}>
+                 <RefreshCw className="mr-2 h-4 w-4"/>
+                 Refresh from API
+               </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={results.length === 0}>
+              <Download className="mr-2 h-4 w-4"/>
+              Export CSV
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
@@ -315,7 +340,7 @@ export function InfluencerSearchPage() {
               </TableBody>
             </Table>
           </div>
-          {currentPage < totalPages && (
+          {dataSource === 'live' && currentPage < totalPages && (
             <div className="flex items-center justify-center pt-4">
               <Button
                 variant="outline"
