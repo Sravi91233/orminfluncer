@@ -79,10 +79,33 @@ const searchInfluencersFlow = ai.defineFlow(
        
        console.log(`[searchInfluencersFlow] Page ${currentPage} processed. Found ${pageResults.length} creators.`);
        
-       if (pageResults.length > 0 && city && city !== 'Any City' && platform && platform !== 'any') {
+       // Auto-save results to Firestore if any are found.
+       if (pageResults.length > 0) {
          try {
-            await saveInfluencersToFirestore(city, platform, pageResults);
-            console.log(`[searchInfluencersFlow] Successfully triggered save for ${pageResults.length} influencers to ${city}/${platform}.`);
+            // Group results by city and platform to save them correctly
+            const groupedResults: Record<string, Record<string, Influencer[]>> = {};
+            pageResults.forEach(influencer => {
+                const influencerCity = (influencer.city || 'Unknown').toLowerCase();
+                const influencerPlatform = (influencer.platform || 'Unknown').toLowerCase();
+                if (!groupedResults[influencerCity]) {
+                    groupedResults[influencerCity] = {};
+                }
+                if (!groupedResults[influencerCity][influencerPlatform]) {
+                    groupedResults[influencerCity][influencerPlatform] = [];
+                }
+                groupedResults[influencerCity][influencerPlatform].push(influencer);
+            });
+            
+            // Asynchronously save all groups
+            for (const [resCity, platforms] of Object.entries(groupedResults)) {
+                for (const [resPlatform, influencers] of Object.entries(platforms)) {
+                    if (influencers.length > 0) {
+                        await saveInfluencersToFirestore(resCity, resPlatform, influencers);
+                        console.log(`[searchInfluencersFlow] Successfully triggered save for ${influencers.length} influencers to ${resCity}/${resPlatform}.`);
+                    }
+                }
+            }
+
          } catch (dbError: any) {
             console.error(`[searchInfluencersFlow] Database save failed: ${dbError.message}`);
          }
