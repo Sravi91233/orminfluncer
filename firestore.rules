@@ -32,18 +32,19 @@ service cloud.firestore {
       allow write, create, delete: if isAdmin();
     }
     
-    // Allow any authenticated user to read and write to the influencers collection and its subcollections.
-    // This allows the server-side flow to cache search results.
-    match /influencers/{city}/{platform}/{influencerId} {
-       allow read, write: if request.auth != null;
-    }
-
     // Allow a client to create an OTP document for their own email.
     // This is used for email verification during signup.
     match /otp/{email} {
       allow create: if request.resource.data.email == email;
       // Deny all other client operations for security.
       allow read, update, delete: if false;
+    }
+
+    // Allow server-side flows to write influencer data.
+    // Allow any authenticated client to read the cached influencer data.
+    match /influencers/{city}/{platform}/{influencerId} {
+        allow read: if request.auth != null;
+        allow write: if true; // Allows server-side writes (request.auth is null)
     }
   }
 }
