@@ -119,7 +119,13 @@ export function InfluencerSearchPage() {
     try {
       const response = await searchInfluencers(searchParams);
       if (response.success) {
-        setResults(prev => page === 1 ? response.results : [...prev, ...response.results]);
+        setResults(prev => {
+          const newResults = response.results || [];
+          const combined = page === 1 ? newResults : [...prev, ...newResults];
+          // Filter out duplicates by creating a map of unique IDs
+          const uniqueResults = Array.from(new Map(combined.map(item => [item.id, item])).values());
+          return uniqueResults;
+        });
         setCurrentPage(response.currentPage);
         setTotalPages(response.totalPages);
         setDataSource('live');
