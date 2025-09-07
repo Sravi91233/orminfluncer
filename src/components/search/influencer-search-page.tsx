@@ -23,6 +23,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { Combobox } from '../ui/combobox';
 
 const searchFormSchema = z.object({
   city: z.string().optional(),
@@ -65,7 +66,7 @@ export function InfluencerSearchPage() {
 
   const form = useForm<z.infer<typeof searchFormSchema>>({
     resolver: zodResolver(searchFormSchema),
-    defaultValues: { city: 'Any City', category: '', platform: 'any', bio: '' },
+    defaultValues: { city: '', category: '', platform: 'any', bio: '' },
   });
 
   const selectedCity = form.watch('city');
@@ -87,12 +88,16 @@ export function InfluencerSearchPage() {
   
   React.useEffect(() => {
     const fetchCachedData = async () => {
-        if (selectedCity && selectedCity !== 'Any City') {
+        if (selectedCity) {
             setIsSearching(true);
             setDataSource('none');
             setResults([]);
+            // Find the city name from its ID
+            const cityName = availableCities.find(c => c.id === selectedCity)?.name;
+            if (!cityName) return;
+
             try {
-                const response = await getCachedInfluencers({ city: selectedCity });
+                const response = await getCachedInfluencers({ city: cityName });
                 if (response.success) {
                     setResults(response.results);
                     setDataSource(response.results.length > 0 ? 'cache' : 'none');
@@ -125,7 +130,10 @@ export function InfluencerSearchPage() {
       setIsLoadingMore(true);
     }
     
-    const searchParams = { ...values, currentPage: page };
+    // Find the city name from its ID
+    const cityName = availableCities.find(c => c.id === values.city)?.name;
+    const searchParams = { ...values, city: cityName, currentPage: page };
+
     if (searchParams.platform === 'any') {
       searchParams.platform = '';
     }
@@ -175,7 +183,7 @@ export function InfluencerSearchPage() {
   };
   
   const handleReset = () => {
-    form.reset({ city: 'Any City', category: '', platform: 'any', bio: '' });
+    form.reset({ city: '', category: '', platform: 'any', bio: '' });
     setResults([]);
     setCurrentPage(1);
     setTotalPages(0);
@@ -215,6 +223,14 @@ export function InfluencerSearchPage() {
     return followers;
   };
 
+  const cityOptions = React.useMemo(() => {
+    const options = availableCities.map(city => ({ value: city.id, label: city.name }));
+    // Add "Any City" option if needed, or handle it as the default empty state
+    // For the combobox, it might be better to have an empty default and let the user search
+    return options;
+  }, [availableCities]);
+
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Influencer Search</h1>
@@ -226,22 +242,21 @@ export function InfluencerSearchPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(v => handleSearchFromApi(v, 1))} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <FormField name="city" control={form.control} render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>City</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Any City" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Any City">Any City</SelectItem>
-                        {availableCities.map(city => <SelectItem key={city.id} value={city.id}>{city.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}/>
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>City</FormLabel>
+                      <Combobox
+                        options={cityOptions}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select a city..."
+                      />
+                    </FormItem>
+                  )}
+                />
                 <FormField name="category" control={form.control} render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
@@ -437,5 +452,7 @@ export function InfluencerSearchPage() {
     </div>
   );
 }
+
+    
 
     
