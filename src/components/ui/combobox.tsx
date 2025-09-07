@@ -60,6 +60,7 @@ export function Combobox({ options, value, onChange, placeholder }: ComboboxProp
                   key={option.value}
                   value={option.value}
                   onSelect={handleSelect}
+                  className="cursor-pointer"
                 >
                   <Check
                     className={cn(
