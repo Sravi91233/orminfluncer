@@ -30,6 +30,9 @@ export function Combobox({ options, value, onChange, placeholder }: ComboboxProp
   const [open, setOpen] = React.useState(false)
 
   const handleSelect = (currentValue: string) => {
+    // Check if the selected value is the same as the current value.
+    // If it is, we effectively deselect it by passing an empty string.
+    // Otherwise, we select the new value.
     onChange(currentValue === value ? "" : currentValue)
     setOpen(false)
   }
@@ -49,7 +52,7 @@ export function Combobox({ options, value, onChange, placeholder }: ComboboxProp
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command>
           <CommandInput placeholder="Search..." />
           <CommandList>
@@ -60,7 +63,6 @@ export function Combobox({ options, value, onChange, placeholder }: ComboboxProp
                   key={option.value}
                   value={option.value}
                   onSelect={handleSelect}
-                  className="cursor-pointer"
                 >
                   <Check
                     className={cn(
