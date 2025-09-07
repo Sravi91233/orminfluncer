@@ -30,12 +30,6 @@ interface ComboboxProps {
 export function Combobox({ options, value, onChange, placeholder }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
-  const handleSelect = (currentValue: string) => {
-    console.log('Combobox handleSelect triggered with value:', currentValue);
-    onChange(currentValue === value ? "" : currentValue)
-    setOpen(false)
-  }
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -61,7 +55,10 @@ export function Combobox({ options, value, onChange, placeholder }: ComboboxProp
                 <CommandItem
                   key={option.value}
                   value={option.value}
-                  onSelect={() => handleSelect(option.value)}
+                  onSelect={(currentValue) => {
+                    onChange(currentValue === value ? "" : currentValue)
+                    setOpen(false)
+                  }}
                 >
                   <Check
                     className={cn(
