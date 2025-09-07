@@ -30,9 +30,6 @@ export function Combobox({ options, value, onChange, placeholder }: ComboboxProp
   const [open, setOpen] = React.useState(false)
 
   const handleSelect = (currentValue: string) => {
-    // Check if the selected value is the same as the current value.
-    // If it is, we effectively deselect it by passing an empty string.
-    // Otherwise, we select the new value.
     onChange(currentValue === value ? "" : currentValue)
     setOpen(false)
   }
@@ -62,7 +59,7 @@ export function Combobox({ options, value, onChange, placeholder }: ComboboxProp
                 <CommandItem
                   key={option.value}
                   value={option.value}
-                  onSelect={handleSelect}
+                  onSelect={() => handleSelect(option.value)}
                 >
                   <Check
                     className={cn(
