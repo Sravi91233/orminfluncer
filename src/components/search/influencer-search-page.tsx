@@ -50,7 +50,7 @@ export function InfluencerSearchPage() {
   const [isLoading, setIsLoading] = React.useState(false);
   const { toast } = useToast();
   
-  const [availableCities, setAvailableCities] = React.useState<string[]>([]);
+  const [availableCities, setAvailableCities] = React.useState<{id: string, name: string}[]>([]);
   
   const [currentPage, setCurrentPage] = React.useState(1);
   const [totalPages, setTotalPages] = React.useState(0);
@@ -75,8 +75,8 @@ export function InfluencerSearchPage() {
       try {
         const citiesCollection = collection(db, 'Cities');
         const citySnapshot = await getDocs(citiesCollection);
-        const citiesList = citySnapshot.docs.map(doc => doc.data().name as string);
-        setAvailableCities(citiesList.sort());
+        const citiesList = citySnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name as string }));
+        setAvailableCities(citiesList.sort((a, b) => a.name.localeCompare(b.name)));
       } catch (error) {
         console.error("Error fetching cities:", error);
         toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch cities for search form.' });
@@ -237,7 +237,7 @@ export function InfluencerSearchPage() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="Any City">Any City</SelectItem>
-                        {availableCities.map(city => <SelectItem key={city} value={city}>{city}</SelectItem>)}
+                        {availableCities.map(city => <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </FormItem>
