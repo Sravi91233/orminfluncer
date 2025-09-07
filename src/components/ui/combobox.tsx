@@ -30,6 +30,11 @@ interface ComboboxProps {
 export function Combobox({ options, value, onChange, placeholder }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
+  const handleSelect = (currentValue: string) => {
+    onChange(currentValue === value ? "" : currentValue)
+    setOpen(false)
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -54,19 +59,25 @@ export function Combobox({ options, value, onChange, placeholder }: ComboboxProp
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label} // Use label for filtering
-                  onSelect={() => {
-                    onChange(option.value === value ? "" : option.value)
-                    setOpen(false)
-                  }}
+                  value={option.label}
+                  onSelect={() => handleSelect(option.value)}
                 >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option.label}
+                    <div 
+                      className="flex items-center w-full"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSelect(option.value);
+                      }}
+                     >
+                        <Check
+                            className={cn(
+                            "mr-2 h-4 w-4",
+                            value === option.value ? "opacity-100" : "opacity-0"
+                            )}
+                        />
+                        {option.label}
+                    </div>
                 </CommandItem>
               ))}
             </CommandGroup>
