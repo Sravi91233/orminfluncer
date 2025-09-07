@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -30,6 +31,7 @@ export function Combobox({ options, value, onChange, placeholder }: ComboboxProp
   const [open, setOpen] = React.useState(false)
 
   const handleSelect = (currentValue: string) => {
+    console.log('Combobox handleSelect triggered with value:', currentValue);
     onChange(currentValue === value ? "" : currentValue)
     setOpen(false)
   }
