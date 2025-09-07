@@ -1,39 +1,39 @@
-
 "use client"
 
 import * as React from "react"
 import { Check, ChevronsUpDown } from "lucide-react"
+import * as SelectPrimitive from "@radix-ui/react-select"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
-interface ComboboxProps {
-    options: { value: string; label: string }[];
-    value?: string;
-    onChange: (value: string) => void;
-    placeholder?: string;
+export interface ComboboxOption {
+  value: string
+  label: string
 }
 
-export function Combobox({ options, value, onChange, placeholder }: ComboboxProps) {
-  const [open, setOpen] = React.useState(false)
+interface ComboboxProps {
+  options: ComboboxOption[]
+  value?: string
+  onChange?: (value: string) => void
+  placeholder?: string
+  searchPlaceholder?: string
+  emptyPlaceholder?: string
+  disabled?: boolean
+}
 
-  const handleSelect = (currentValue: string) => {
-    onChange(currentValue === value ? "" : currentValue)
-    setOpen(false)
-  }
+export function Combobox({
+  options,
+  value,
+  onChange,
+  placeholder = "Select option...",
+  searchPlaceholder = "Search...",
+  emptyPlaceholder = "No results found.",
+  disabled = false,
+}: ComboboxProps) {
+  const [open, setOpen] = React.useState(false)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -42,28 +42,30 @@ export function Combobox({ options, value, onChange, placeholder }: ComboboxProp
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          disabled={disabled}
           className="w-full justify-between"
         >
           {value
             ? options.find((option) => option.value === value)?.label
-            : placeholder || "Select an option..."}
+            : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
-          <CommandInput placeholder="Search..." />
+          <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandEmpty>{emptyPlaceholder}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.label}
-                  onSelect={() => handleSelect(option.value)}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+                  onSelect={() => {
+                    if (onChange) {
+                      onChange(option.value === value ? "" : option.value)
+                    }
+                    setOpen(false)
                   }}
                 >
                   <Check
