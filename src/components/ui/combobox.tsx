@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -30,6 +29,11 @@ interface ComboboxProps {
 export function Combobox({ options, value, onChange, placeholder }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
+  const handleSelect = (currentValue: string) => {
+    onChange(currentValue === value ? "" : currentValue)
+    setOpen(false)
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -47,34 +51,29 @@ export function Combobox({ options, value, onChange, placeholder }: ComboboxProp
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
         <Command>
-            <CommandInput placeholder="Search..." />
-            <CommandList>
-                <CommandEmpty>No results found.</CommandEmpty>
-                <CommandGroup>
-                    {options.map((option) => (
-                    <CommandItem
-                        key={option.value}
-                        value={option.value}
-                        onSelect={(currentValue) => {
-                            onChange(currentValue === value ? "" : currentValue)
-                            setOpen(false)
-                        }}
-                    >
-                        <Check
-                        className={cn(
-                            "mr-2 h-4 w-4",
-                            value === option.value ? "opacity-100" : "opacity-0"
-                        )}
-                        />
-                        {option.label}
-                    </CommandItem>
-                    ))}
-                </CommandGroup>
-            </CommandList>
+          <CommandInput placeholder="Search..." />
+          <CommandList>
+            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  value={option.value}
+                  onSelect={handleSelect}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === option.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {option.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
         </Command>
       </PopoverContent>
     </Popover>
   )
 }
-
-    
