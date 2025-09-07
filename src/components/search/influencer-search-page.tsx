@@ -237,7 +237,7 @@ export function InfluencerSearchPage() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="Any City">Any City</SelectItem>
-                        {availableCities.map(city => <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>)}
+                        {availableCities.map(city => <SelectItem key={city.id} value={city.id}>{city.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </FormItem>
@@ -437,3 +437,5 @@ export function InfluencerSearchPage() {
     </div>
   );
 }
+
+    
